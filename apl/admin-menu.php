@@ -6,7 +6,6 @@ class APL_AdminMenu
 {
 
 	protected $handler;				// The handler controlling the menu.
-	protected $helper;
 		
 	public $name;					// The name/slug of the menu.
 	public $menu_title;				// The title show on the left menu.
@@ -47,21 +46,10 @@ class APL_AdminMenu
 	}
 	
 
-	/*
-	Sets the menu's helper.
-	@param  $helper  [APL_helper]  
-	*/
-	public function set_helper( $helper )
-	{
-		$this->helper = $helper;
-		foreach( $this->pages as $page ) { $page->set_helper( $helper ); }
-	}
-	
-	
-	/*
-	Add a child page to the admin menu.
-	@param  $page  [APL_AdminPage]  A child admin page for the admin menu.
-	*/
+	/**
+	 * Add a child page to the admin menu.
+	 * @param  APL_AdminPage  $page  A child admin page for the admin menu.
+	 */
 	public function add_page( $page )
 	{
 		$page->set_handler( $this->handler );

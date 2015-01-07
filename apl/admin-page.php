@@ -8,7 +8,6 @@ abstract class APL_AdminPage
 	protected $handler;			// The handler that controls the admin page.
 	protected $menu;			// The parent admin menu's name (eg. "themes.php")
 								// or APL_AdminMenu object.
-	protected $helper;
 	
 	public $name;				// The name/slug of the page.
 	public $page_title;			// The title of the page.
@@ -138,21 +137,10 @@ abstract class APL_AdminPage
 	}	
 	
 
-	/*
-	Sets the menu's helper.
-	@param  $helper  [APL_helper]  
-	*/
-	public function set_helper( $helper )
-	{
-		$this->helper = $helper;
-		foreach( $this->tabs as $tab ) { $tab->set_helper( $helper ); }
-	}
-		
-	
-	/*
-	Sets the page's parent menu.
-	@param  $menu  [APL_AdminMenu]  The parent menu of the page.
-	*/
+	/**
+	 * Sets the page's parent menu.
+	 * @param  APL_AdminMenu  $menu  The parent menu of the page.
+	 */
 	public function set_menu( $menu )
 	{
 		$this->menu = $menu;

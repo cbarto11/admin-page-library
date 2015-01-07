@@ -1,12 +1,12 @@
 <?php
 
 
-/*
-Print the content of a variable with a label as a "title".  The entire contents is 
-enclosed in a <pre> block.
-@param  $var    [mixed]        The variable to "dumped"/printed to screen.
-@param  $label  [string|null]  The label/title of the variable information.
-*/
+/**
+ * Print the content of a variable with a label as a "title".  The entire contents is 
+ * enclosed in a <pre> block.
+ * @param  mixed        $var    The variable to "dumped"/printed to screen.
+ * @param  string|null  $label  The label/title of the variable information.
+ */
 if( !function_exists('apl_print') ):
 function apl_print( $var, $label = null )
 {
@@ -18,12 +18,12 @@ function apl_print( $var, $label = null )
 endif;
 
 
-/*
-Prints the name of an input field.
-@param  [args]        The keys of the input name.  For example:
-                        apl_name_e( 'a', 'b', 'c' ) will echo "a[b][c]"
-                        apl_name_e( array( 'a', 'b', 'c' ) ) will echo "a[b][c]"
-*/
+/**
+ * Prints the name of an input field.
+ * @param  {args}  The keys of the input name.  For example:
+ *                 apl_name_e( 'a', 'b', 'c' ) will echo "a[b][c]"
+ *                 apl_name_e( array( 'a', 'b', 'c' ) ) will echo "a[b][c]"
+ */
 if( !function_exists('apl_name_e') ):
 function apl_name_e()
 {
@@ -32,13 +32,13 @@ function apl_name_e()
 endif;
 
 
-/*
-Constructs the name of an input field.
-@param  [array|args]  The keys of the input name.  For example:
-                        apl_name( 'a', 'b', 'c' ) will return "a[b][c]"
-                        apl_name( array( 'a', 'b', 'c' ) ) will return "a[b][c]"
-@return  [string]     The constructed input name. 
-*/
+/**
+ * Constructs the name of an input field.
+ * @param   array|{args}  The keys of the input name.  For example:
+ *                         apl_name( 'a', 'b', 'c' ) will return "a[b][c]"
+ *                         apl_name( array( 'a', 'b', 'c' ) ) will return "a[b][c]"
+ * @return  string        The constructed input name. 
+ */
 if( !function_exists('apl_name') ):
 function apl_name()
 {
@@ -60,12 +60,12 @@ function apl_name()
 endif;
 
 
-/*
-Constructs the current page's url with current SSL and arguments.
-@return  [string]     The constructed page URL.
-*/
-if( !function_exists('get_page_url') ):
-function get_page_url()
+/**
+ * Constructs the current page's complete url.
+ * @return  string  The constructed page URL.
+ */
+if( !function_exists('apl_get_page_url') ):
+function apl_get_page_url()
 {
 	$page_url = 'http';
 	if( isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on') ) $page_url .= 's';

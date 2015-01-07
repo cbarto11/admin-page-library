@@ -1,8 +1,5 @@
 <?php
-	
-
 require_once( dirname(__FILE__).'/functions.php' );
-require_once( dirname(__FILE__).'/helper.php' );
 require_once( dirname(__FILE__).'/admin-menu.php' );
 require_once( dirname(__FILE__).'/admin-page.php' );
 require_once( dirname(__FILE__).'/tab-admin-page.php' );
@@ -12,10 +9,6 @@ require_once( dirname(__FILE__).'/tab-link.php' );
 if( !class_exists('APL_Handler') ):
 class APL_Handler
 {
-	protected $helper;			// 
-
-	protected $menus;			// 
-	protected $pages;			// 
 	
 	public $current_page;		// 
 	public $current_tab;		// 
@@ -29,8 +22,6 @@ class APL_Handler
 	*/
 	public function __construct()
 	{
-		$this->helper = new APL_Helper( $this );
-		
 		$this->menus = array();
 		$this->pages = array();
 		
@@ -52,7 +43,6 @@ class APL_Handler
 	public function add_menu( $menu )
 	{
 		$menu->set_handler( $this );
-		$menu->set_helper( $this->helper );
 		$this->menus[] = $menu;
 	}
 	
@@ -76,7 +66,6 @@ class APL_Handler
 		}
 		
 		$page->set_handler( $this );
-		$page->set_helper( $this->helper );
 		$page->set_menu( $parent );
 		$this->pages[$parent][] = $page;
 	}
@@ -184,7 +173,7 @@ class APL_Handler
 		
 		unset($_POST);
 		
- 		wp_redirect( $this->helper->get_page_url() );
+ 		wp_redirect( $redirect_url );
 		exit;
 	}
 	
