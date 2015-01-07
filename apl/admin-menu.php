@@ -89,9 +89,24 @@ class APL_AdminMenu
 	}
 	
 	
-	/*
-	Displays the tab list for the all the pages within the admin menu.
-	*/
+	/**
+	 * Retrieves the page that name/slug matches the page name.
+	 * @param   string  $page_name   The name/slug of the page.
+	 * @return  APL_AdminPage|false  The APL_AdminPage object that matches the page name,
+	 *                               otherwise False.
+	 */
+	public function get_page( $page_name )
+	{
+		foreach( $this->pages as $page )
+		{
+			if( $page_name === $page->name )
+				return $page;
+		}
+		
+		return false;
+	}
+	
+	
 	/**
 	 * Displays the tab list for the all the pages within the admin menu.
 	 */

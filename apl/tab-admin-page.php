@@ -36,23 +36,30 @@ abstract class APL_TabAdminPage extends APL_AdminPage
 	 */
 	public function setup()
 	{
-		if( $this->handler->current_tab === $this->name )
-		{
-			$this->is_current_tab = true;
-		}
-		else
-		{
-			return;
-		}
+		if( $this->handler->current_tab !== $this ) return;
+		
+		$this->is_current_tab = true;
 
-		add_filter(
-			$this->page->name.'-'.$this->name.'-process-input',
-			array($this, 'process_settings'),
-			99, 2
-		);
+		global $pagenow;
+		switch( $pagenow )
+		{
+			case 'options.php':
+				break;
+			
+			default:
+				add_action( 'admin_enqueue_scripts', array($this, 'enqueue_scripts') );
+				add_action( 'admin_head', array($this, 'add_head_script') );
+				break;
+		}
+		
+		add_action( $this->get_name().'-register-settings', array($this, 'register_settings') );
+		add_action( $this->get_name().'-add-settings-sections', array($this, 'add_settings_sections') );
+		add_action( $this->get_name().'-add-settings-fields', array($this, 'add_settings_fields') );
+			
+		add_filter( $this->get_name().'-process-input', array($this, 'process_settings'), 99, 2 );
 		add_action( 'admin_init', array($this, 'process_page') );
 	}
-	
+		
 
 	/**
 	 * Sets the tab's parent admin page.
@@ -71,13 +78,22 @@ abstract class APL_TabAdminPage extends APL_AdminPage
 	{
 		?>
 		
-		<a 
-		 href="?page=<?php echo $this->page->name; ?>&tab=<?php echo $this->name; ?>"
-		 class="nav-tab <?php if( $this->name == $this->handler->current_tab ) echo 'active'; ?>">
+		<a href="?page=<?php echo $this->page->name; ?>&tab=<?php echo $this->name; ?>"
+		   class="nav-tab <?php if( $this == $this->handler->current_tab ) echo 'active'; ?>">
 			<?php echo $this->page_title; ?>
 		</a>
 		
 		<?php
+	}
+	
+	
+	/**
+	 * Gets the name of the tab-admin page.
+	 * @return  string  The name of the tab-admin page.
+	 */
+	public function get_name()
+	{
+		return $this->page->get_name().'-'.$this->name;
 	}
 
 } // class APL_TabAdminPage

@@ -92,21 +92,12 @@ abstract class APL_AdminPage
 			);
 		}
 		
+		if( $this->handler->current_page !== $this ) return;
+		
+		$this->is_current_page = true;
+		
         add_action( "load-$hook", array( $this, 'add_screen_options' ) );
 
-		if( $this->handler->current_page === $this->name )
-		{
-			$this->is_current_page = true;
-			
-			if( (!$this->handler->current_tab) ||
-				(!in_array($this->handler->current_tab, array_keys($this->tab_names))) )
-				$this->handler->current_tab = $this->get_default_tab();
-		}
-		else
-		{
-			return;
-		}
-		
 		global $pagenow;
 		switch( $pagenow )
 		{
@@ -119,11 +110,11 @@ abstract class APL_AdminPage
 				break;
 		}
 		
-		add_action( $this->name.'-register-settings', array($this, 'register_settings') );
-		add_action( $this->name.'-add-settings-sections', array($this, 'add_settings_sections') );
-		add_action( $this->name.'-add-settings-fields', array($this, 'add_settings_fields') );
+		add_action( $this->get_name().'-register-settings', array($this, 'register_settings') );
+		add_action( $this->get_name().'-add-settings-sections', array($this, 'add_settings_sections') );
+		add_action( $this->get_name().'-add-settings-fields', array($this, 'add_settings_fields') );
 			
-		add_filter( $this->name.'-process-input', array($this, 'process_settings'), 99, 2 );
+		add_filter( $this->get_name().'-process-input', array($this, 'process_settings'), 99, 2 );
 		add_action( 'admin_init', array($this, 'process_page') );
 		
 		foreach( $this->tabs as $tab )
@@ -153,7 +144,10 @@ abstract class APL_AdminPage
 	public function set_handler( $handler )
 	{
 		$this->handler = $handler;
-		foreach( $this->tabs as $tab ) { $tab->set_handler( $handler ); }
+		foreach( $this->tabs as $tab )
+		{
+			if( $tab instanceof APL_TabAdminPage ) { $tab->set_handler( $handler ); }
+		}
 	}	
 	
 
@@ -164,7 +158,10 @@ abstract class APL_AdminPage
 	public function set_menu( $menu )
 	{
 		$this->menu = $menu;
-		foreach( $this->tabs as $tab ) { $tab->set_menu( $menu ); }
+		foreach( $this->tabs as $tab )
+		{
+			if( $tab instanceof APL_TabAdminPage ) { $tab->set_menu( $menu ); }
+		}
 	}	
 
 	
@@ -192,7 +189,10 @@ abstract class APL_AdminPage
 	public function get_default_tab()
 	{
 		$keys = array_keys($this->tab_names);
-		if( count($keys) > 0 ) return $keys[0];
+		if( count($keys) > 0 ) 
+		{
+			return $this->tabs[$this->tab_names[$keys[0]]];
+		}
 		return null;
 	}
 	
@@ -208,10 +208,25 @@ abstract class APL_AdminPage
 
  		foreach( $this->tabs as $tab )
  		{
-			$tab->display_tab( $this->current_tab );
+			$tab->display_tab();
  		}
 		
 		?></h2><?php
+	}
+	
+	
+	/**
+	 * Retreives that APL_TabAdminPage object that matches the name.
+	 * @param   string  $name  The name of the tab.
+	 * @return  APL_TabAdminPage|null  The APL_TabAdminPage object if exists, otherwise null.
+	 */
+	public function get_tab_by_name( $name )
+	{
+		if( in_array($name, array_keys($this->tab_names)) )
+		{
+			return $this->tabs[$this->tab_names[$name]];
+		}
+		return null;
 	}
 	
 	
@@ -289,7 +304,7 @@ abstract class APL_AdminPage
 	public function add_field( $section, $name, $title, $callback, $args = array() )
 	{
 		add_settings_field( 
-			$name, $title, array( $this, $callback ), $this->name.':'.$section_name, $section_name, $args
+			$name, $title, array( $this, $callback ), $this->name.':'.$section, $section, $args
 		);
 	}
 	
@@ -308,7 +323,7 @@ abstract class APL_AdminPage
 	{
 		if( empty($_POST) ) return;
 		
-		if( !isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], $this->name.'-options') )
+		if( !isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], $this->get_name().'-options') )
 		{
 			// TODO: error... The submitted data cannot be verified.
 			return;
@@ -318,7 +333,7 @@ abstract class APL_AdminPage
 		{
 			foreach( $this->settings as $setting )
 			{
-				if( !isset($_POST[$settings]) ) continue;
+				if( !isset($_POST[$setting]) ) continue;
 				
 				if( is_network_admin() )
 				{
@@ -358,9 +373,9 @@ abstract class APL_AdminPage
 		 	<div class="page-contents">
 		 	
 		 	<?php
+		 	
 		 	if( $this->handler->current_tab ):
-		 		$index = $this->tab_names[$this->handler->current_tab];
-		 		$this->tabs[$index]->display();
+		 		$this->handler->current_tab->display();
 		 	else:
 		 		$this->display();
 		 	endif;
@@ -413,10 +428,10 @@ abstract class APL_AdminPage
 	{
 		if( $use_settings_api && !$this->use_custom_settings && !is_network_admin() )
 		{
-			return "options.php";
+			return 'options.php';
 		}
 
-		return $this->helper->get_page_url();
+		return apl_get_page_url();
 	}
 	
 	
@@ -431,7 +446,14 @@ abstract class APL_AdminPage
 	{
 		?>
 
-		<form action="<?php echo $this->get_form_url( $use_settings_api ); ?>" method="POST">
+		<form action="<?php echo $this->get_form_url( $use_settings_api ); ?>" 
+		      method="POST" 
+		      class="<?php echo $class; ?>"
+		      <?php
+		      foreach( $attributes as $key => $value ):
+		      	echo $key.'="'.$value.'" ';
+		      endforeach;
+		      ?>>
 		<?php settings_fields( $this->name ); ?>
 		
 		<?php
@@ -456,6 +478,61 @@ abstract class APL_AdminPage
 	public function print_section( $section_name )
 	{
 		do_settings_sections( $this->name.':'.$section_name );
+	}
+	
+	
+	/**
+	 * Displays a button with the needed attributes to be used by the AplAjaxButton
+	 * jQuery plugin for automated AJAX processing. 
+	 * @param  string       $text          The text to display on the button.
+	 * @param  string       $action        The action to send in the AJAX request.
+	 * @param  array|null   $form_classes  The classes of the forms that should be 
+	 *                                     processed via AJAX individually.  If no form
+	 *                                     is given, then current form is assumed.
+	 * @param  array|null   $input_names   The names of the form input values to process
+	 *                                     via AJAX together.  If no input values are
+	 *                                     given, then the entire form will be processed.
+	 * @param  string|null  $callback_start       The JS function to call when processing 
+	 *                                            begins, before the first loop.
+	 * @param  string|null  $callback_end         The JS function to call when processing
+	 *                                            finishes, after the last loop.
+	 * @param  string|null  $callback_loop_start  The JS function to call when each form
+	 *                                            begins processing.
+	 * @param  string|null  $callback_loop_end    The JS function to call when each formatOutput
+	 *                                            finishes processing.
+	 */
+	public function create_ajax_submit_button( $text, $action, $form_classes, $input_names, $callback_start = null, $callback_end = null, $callback_loop_start = null, $callback_loop_end = null )
+	{
+		if( is_array($form_classes) ) $form_classes = implode( ',', $form_classes );
+		if( is_array($input_names) ) $input_names = implode( ',', $input_names );
+		$nonce = wp_create_nonce( $this->handler->get_full_page_name().'-'.$action.'-ajax-request' );
+		
+		?>
+		<button type="button" 
+		        class="apl-ajax-button"
+		        page="<?php echo $this->handler->get_page_name(); ?>"
+		        tab="<?php echo $this->handler->get_tab_name(); ?>"
+		        action="<?php echo $action; ?>"
+		        form="<?php echo $form_classes; ?>"
+		        input="<?php echo $input_names; ?>"
+		        cb_start="<?php echo $callback_start; ?>"
+		        cb_end="<?php echo $callback_end; ?>"
+		        cb_loop_start="<?php echo $callback_loop_start; ?>"
+		        cb_loop_end="<?php echo $callback_loop_end; ?>"
+		        nonce="<?php echo $nonce; ?>">
+		    <?php echo $text; ?>
+		</button>
+		<?php
+	}
+	
+	
+	/**
+	 * Gets the name of the admin page.
+	 * @return  string  The name of the admin page.
+	 */
+	public function get_name()
+	{
+		return $this->name;
 	}
 
 

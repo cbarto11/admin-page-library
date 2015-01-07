@@ -26,10 +26,11 @@ class APL_Handler
 	public $current_page;		// The APL_AdminPage object of the current page.
 	public $current_tab;		// The APL_TabAdminPage object of the current tab.
 	
-	public $current_page;		// 
-	public $current_tab;		// 
+	public $disable_redirect;   // False if we need to attempt to redirect when POST data
+	                            // is present, otherwise True.
 	
-	public $disable_redirect;   // 
+	public $is_network_admin;   // True if only show pages on the network admin menu,
+	                            // otherwise False to only show on a site's admin menu.
 	
 
 	/**
@@ -48,6 +49,17 @@ class APL_Handler
 		$this->disable_redirect = false;
 		$this->use_settings_api = true;
 		
+		$this->is_network_admin = $is_network_admin;
+
+		if( $is_network_admin )
+		{
+			add_action( 'network_admin_menu', array($this, 'setup') );
+		}
+		else
+		{
+			add_action( 'admin_menu', array($this, 'setup') );
+		}
+
 		add_action( 'admin_enqueue_scripts', array($this, 'enqueue_scripts') );
 		add_action( 'wp_ajax_apl-ajax-action', array($this, 'perform_ajax_request') );
 	}
@@ -112,6 +124,25 @@ class APL_Handler
 		}
 	}
 	
+	
+	/**
+	 * Performs an AJAX request on each of the menus and admin pages.
+	 */
+	public function perform_ajax_request()
+	{
+		$this->set_current_page();
+		
+		if( $this->current_tab )
+		{
+			$this->current_tab->perform_ajax_request();
+		}
+		
+		if( $this->current_page )
+		{
+			$this->current_page->perform_ajax_request();
+		}
+	}
+	
 
 	/**
 	 * Determines the current page and tab being shown.
@@ -124,16 +155,45 @@ class APL_Handler
 		{
 			case 'options.php':
 				$this->current_page = ( !empty($_POST['option_page']) ? $_POST['option_page'] : null );
+				$this->current_tab = ( isset($_POST['tab']) ? $_POST['tab'] : null );
+				$this->disable_redirect = true;
+				break;
+			
+			case 'admin-ajax.php':
+				$this->current_page = ( !empty($_POST['admin-page']) ? $_POST['admin-page'] : null );
+				$this->current_tab = ( !empty($_POST['admin-tab']) ? $_POST['admin-tab'] : null );
 				$this->disable_redirect = true;
 				break;
 			
 			case 'admin.php':
 			default:
 				$this->current_page = ( !empty($_GET['page']) ? $_GET['page'] : null );
+				$this->current_tab = ( isset($_GET['tab']) ? $_GET['tab'] : null );
 				break;
 		}
 		
-		$this->current_tab = ( isset($_GET['tab']) ? $_GET['tab'] : null );
+		if( $this->current_page )
+		{
+			$this->current_page = $this->get_page( $this->current_page );
+			
+			if( $this->current_page )
+			{
+				if( $this->current_tab )
+				{
+					$this->current_tab = $this->current_page->get_tab_by_name($this->current_tab);	
+				}
+				
+				if( !$this->current_tab )
+				{
+					$this->current_tab = $this->current_page->get_default_tab();
+				}
+			}
+		}
+		
+		if( !$this->current_page )
+		{
+			$this->disable_redirect = true;
+		}
 	}
 	
 
@@ -145,11 +205,19 @@ class APL_Handler
 	 */
 	protected function get_page( $page_name )
 	{
-// 		apl_print( $this->current_page.'-register-settings', 'do_action' );
+		foreach( $this->menus as $menu )
+		{
+			if( $p = $menu->get_page($page_name) )
+				return $p;
+		}
 		
-		do_action( $this->current_page.'-register-settings' );
-		do_action( $this->current_page.'-add-settings-sections' );
-		do_action( $this->current_page.'-add-settings-fields' );
+		foreach( $this->pages as $page )
+		{
+			if( $page_name === $page->name )
+				return $page;
+		}
+
+		return false;
 	}
 	
 
@@ -158,12 +226,18 @@ class APL_Handler
 	 */
 	public function register_settings()
 	{
-// 		$query_vars[] = 'connections-spoke-api';
-		return $query_vars;
+		do_action( $this->get_full_page_name().'-register-settings' );
+		do_action( $this->get_full_page_name().'-add-settings-sections' );
+		do_action( $this->get_full_page_name().'-add-settings-fields' );
 	}
 	
 	
+	/**
+	 * Enqueue the default and needed styles and scripts for the admin page library.
+	 */
+	public function enqueue_scripts()
 	{
+		wp_enqueue_script( 'apl-ajax', plugins_url('apl/ajax.js', __FILE__), array('jquery') );
 	}
 	
 		
@@ -176,10 +250,55 @@ class APL_Handler
 	{
 		if( (empty($_POST)) || ($this->disable_redirect) ) return;
 		
+		$redirect_url = ( isset($_POST['_wp_http_referer']) ? $_POST['_wp_http_referer'] : apl_get_page_url() );
+		
 		unset($_POST);
 		
  		wp_redirect( $redirect_url );
 		exit;
+	}
+	
+	
+	/**
+	 * Returns the full name/slug of the combined current page and tab.
+	 * @return  string  The full name of the page/tab pair.
+	 */
+	public function get_full_page_name()
+	{
+		$name = '';
+		
+		if( $this->current_page )
+		{
+			$name .= $this->current_page->name;
+			if( $this->current_tab )
+			{
+				$name .= '-'.$this->current_tab->name;
+			}
+		}
+		
+		return $name;
+	}
+	
+	
+	/**
+	 * Returns the name of the current page.
+	 * @return  string|null  The name of the current page, if exists, otherwise null.
+	 */
+	public function get_page_name()
+	{
+		if( $this->current_page ) return $this->current_page->name;
+		return null;
+	}
+	
+
+	/**
+	 * Returns the name of the current tab.
+	 * @return  string|null  The name of the current tab, if exists, otherwise null.
+	 */
+	public function get_tab_name()
+	{
+		if( $this->current_tab ) return $this->current_tab->name;
+		return null;
 	}
 	
 } // class APL_Handler
