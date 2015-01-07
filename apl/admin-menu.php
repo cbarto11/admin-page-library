@@ -1,5 +1,13 @@
 <?php
-
+/**
+ * APL_AdminMenu
+ * 
+ * The APL_AdminMenu class is a representation of a collection of admin pages in
+ * WordPress that will appear together in the main admin menu.
+ * 
+ * @package    apl
+ * @author     Crystal Barton <cbarto11@uncc.edu>
+ */
 
 if( !class_exists('APL_AdminMenu') ):
 class APL_AdminMenu
@@ -10,18 +18,18 @@ class APL_AdminMenu
 	public $name;					// The name/slug of the menu.
 	public $menu_title;				// The title show on the left menu.
 
-	protected $pages;					// The admin pages found in the menu.
+	protected $pages;				// The admin pages found in the menu.
 	
 	public $display_menu_tab_list;	// True if a tab list of all of the page should be
 									// displayed, otherwise False.
 	
 	
-	/*
-	Default constructor.
-	Sets up the values for the admin menu.
-	@param  $name        [string]  The name/slug of the menu.
-	@param  $menu_title  [string]  The title shown on the left menu.
-	*/
+	/**
+	 * Creates an APL_AdminMenu object.
+	 * Sets up the values for the admin menu.
+	 * @param  string  $name        The name/slug of the menu.
+	 * @param  string  $menu_title  The title shown on the left menu.
+	 */
 	public function __construct( $name, $menu_title )
 	{
 		$this->handler = null;
@@ -35,10 +43,10 @@ class APL_AdminMenu
 	}
 	
 	
-	/*
-	Sets the menu's handler.
-	@param  $handler  [APL_Handler]  The handler controlling the menu.
-	*/
+	/**
+	 * Sets the menu's handler.
+	 * @param  APL_Handler  $handler  The handler controlling the menu.
+	 */
 	public function set_handler( $handler )
 	{
 		$this->handler = $handler;
@@ -58,9 +66,9 @@ class APL_AdminMenu
 	}
 	
 
-	/*
-	Adds the admin menu to the main menu and sets up all associated pages.
-	*/
+	/**
+	 * Adds the admin menu to the main menu and sets up all associated pages.
+	 */
 	public function setup()
 	{
 		add_menu_page(
@@ -84,6 +92,9 @@ class APL_AdminMenu
 	/*
 	Displays the tab list for the all the pages within the admin menu.
 	*/
+	/**
+	 * Displays the tab list for the all the pages within the admin menu.
+	 */
 	public function display_tab_list()
 	{
 		if( !$this->display_menu_tab_list ) return;

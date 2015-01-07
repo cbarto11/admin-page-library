@@ -1,5 +1,13 @@
 <?php
-
+/**
+ * APL_AdminPage
+ * 
+ * The APL_AdminPage class is a representation of a admin page in WordPress that will 
+ * appear in the main admin menu.
+ * 
+ * @package    apl
+ * @author     Crystal Barton <cbarto11@uncc.edu>
+ */
 
 if( !class_exists('APL_AdminPage') ):
 abstract class APL_AdminPage
@@ -21,18 +29,17 @@ abstract class APL_AdminPage
 	protected $tab_names;		// The names of the tabs with their index within the
 								//   the $tabs array (for searching purposes).
 	
-	public $use_custom_settings;	// 	
-	protected $settings;			// Registered settings.
+	public $use_custom_settings;// True if use the apl's custom "Settings API".
+	protected $settings;		// All settings that have been registered.
 
 	
-	/*
-	Default constructor.
-	Sets up the values for the admin page.
-	@param  $name        [string]  The name/slug of the page.
-	@param  $page_title  [string]  The title shown on the top of the page.
-	@param  $menu_title  [string]  The title shown on the left menu.
-	@param  $capability  [string]  The capability needed to displayed to the user.
-	*/
+	/**
+	 * Creates an APL_AdminPage object.
+	 * @param  string  $name        The name/slug of the page.
+	 * @param  string  $page_title  The title shown on the top of the page.
+	 * @param  string  $menu_title  The title shown on the left menu.
+	 * @param  string  $capability  The capability needed to displayed to the user.
+	 */
 	public function __construct( $name, $page_title, $menu_title = null, $capability = 'administrator' )
 	{
 		$this->handler = null;
@@ -55,9 +62,9 @@ abstract class APL_AdminPage
 	}
 
 	
-	/*
-	Adds the admin page to the main menu and sets up all values, actions and filters.
-	*/
+	/**
+	 * Adds the admin page to the main menu and sets up all values, actions and filters.
+	 */
 	public function setup()
 	{
 		$menu_name = $this->menu;
@@ -161,10 +168,10 @@ abstract class APL_AdminPage
 	}	
 
 	
-	/*
-	Adds a tab to the page's tab list.  The tab can be an APL_TabAdminPage or APL_TabLink.
-	@param  $tab  [APL_TabAdminPage|APL_TabLink]  The tab class object.
-	*/
+	/**
+	 * Adds a tab to the page's tab list.  The tab can be an APL_TabAdminPage or APL_TabLink.
+	 * @param  APL_TabAdminPage|APL_TabLink  $tab  The tab class object.
+	 */
 	public function add_tab( $tab )
 	{
 		if( $tab instanceof APL_TabAdminPage )
@@ -178,10 +185,10 @@ abstract class APL_AdminPage
 	}
 	
 	
-	/*
-	Determines the default tab to be chosen when the tab isn't specified.
-	@return  [string]  The name of the tab. 
-	*/
+	/**
+	 * Determines the default tab to be chosen when the tab isn't specified.
+	 * @return  string  The name of the tab. 
+	 */
 	public function get_default_tab()
 	{
 		$keys = array_keys($this->tab_names);
@@ -190,9 +197,9 @@ abstract class APL_AdminPage
 	}
 	
 	
-	/*
-	Displays the tab list links.
-	*/
+	/**
+	 * Displays the tab list links.
+	 */
 	public function display_tab_list()
 	{
 		if( count($this->tabs) === 0 ) return;
@@ -208,31 +215,31 @@ abstract class APL_AdminPage
 	}
 	
 	
-	/*
-	Enqueues all the scripts or styles needed for the admin page. 
-	*/
+	/**
+	 * Enqueues all the scripts or styles needed for the admin page. 
+	 */
 	public function enqueue_scripts() { }
 	
 	
-	/*
-	HTML/JavaScript to add to the <head> portion of the page. 
-	*/
+	/**
+	 * HTML/JavaScript to add to the <head> portion of the page. 
+	 */
 	public function add_head_script() { }
 	
 	
-	/*
-	Register each individual settings for the Settings API.
-	*/
+	/**
+	 * Register each individual settings for the Settings API.
+	 */
 	public function register_settings() { }
 	
 	
-	/*
-	Registers the settings key for the Settings API. The settings key is associated with 
-	an option key.  A filter is added for the option key, associated with process_settings
-	function, which should be overwritten by child classes.
-	@param  $key  [string]  The key for the data in the $_POST array, as well as the key
-	                        for the option in the options table.
-	*/
+	/**
+	 * Registers the settings key for the Settings API. The settings key is associated
+	 * with an option key.  A filter is added for the option key, associated with
+	 * process_settings function, which should be overwritten by child classes.
+	 * @param  string  $key  The key for the data in the $_POST array, as well as the key
+	 *                       for the option in the options table.
+	 */
 	public function register_setting( $key )
 	{
 		if( !$this->use_custom_settings )
@@ -245,21 +252,24 @@ abstract class APL_AdminPage
 	}
 	
 	
-	/*
-	Add the sections used for the Settings API. 
-	*/
+	/**
+	 * Add the sections used for the Settings API. 
+	 */
 	public function add_settings_sections() { }
 	
 	
-	/*
-	Add the settings used for the Settings API. 
-	*/
+	/**
+	 * Add the settings used for the Settings API. 
+	 */
 	public function add_settings_fields() { }
 	
 	
-	/*
-	
-	*/
+	/**
+	 * Adds a "Settings API" section.
+	 * @param  string  $name      The name/slug of the section.
+	 * @param  string  $title     The title to display for the the section.
+	 * @param  string  $callback  The function to call when displaying the section.
+	 */
 	public function add_section( $name, $title, $callback )
 	{
 		add_settings_section(
@@ -268,10 +278,15 @@ abstract class APL_AdminPage
 	}
 	
 
-	/*
-	
-	*/
-	public function add_field( $section_name, $name, $title, $callback, $args = array() )
+	/**
+	 * Adds a "Settings API" field.
+	 * @param  string  $section   The name/slug of the section.
+	 * @param  string  $name      The name/slug of the field.
+	 * @param  string  $title     The title to display for the the field.
+	 * @param  string  $callback  The function to call when displaying the section.
+	 * @param  array   $args      The arguments to pass to the callback function.
+	 */
+	public function add_field( $section, $name, $title, $callback, $args = array() )
 	{
 		add_settings_field( 
 			$name, $title, array( $this, $callback ), $this->name.':'.$section_name, $section_name, $args
@@ -279,15 +294,16 @@ abstract class APL_AdminPage
 	}
 	
 	
-	/*
-	Add the admin page's screen options.  
-	*/
+	/**
+	 * Add the admin page's screen options.  
+	 */
 	public function add_screen_options() { }
 	
 	
-	/*
-	Processes the current admin page / tab.
-	*/
+	/**
+	 * Processes the current admin page or tab by checking the nonce, updating settings,
+	 * and running the process function (which should be overloaded by child class).
+	 */
 	public function process_page()
 	{
 		if( empty($_POST) ) return;
@@ -319,9 +335,9 @@ abstract class APL_AdminPage
 	}
 	
 	
-	/*
-	Displays the current admin page / tab. 
-	*/
+	/**
+	 * Displays the current admin page / tab. 
+	 */
 	public function display_page()
 	{
 		?>
@@ -357,33 +373,42 @@ abstract class APL_AdminPage
 	}
 	
 	
-	/*
-	Processes the current admin page.  Only called when tab is not specified. 
-	*/
+	/**
+	 * Processes the current admin page.  Only called when tab is not specified. 
+	 */
 	public function process() { }
 	
 	
-	/*
-	Processes the current admin page's Settings API input.
-	@param  $settings  [array]   The inputted settings from the Settings API.
-	@param  $option    [string]  The option key of the settings input array.
-	@return            [array]   The resulted array to store in the db.
-	*/
+	/**
+	 * Processes the current admin page's Settings API input.
+	 * @param   array   $settings  The inputted settings from the Settings API.
+	 * @param   string  $option    The option key of the settings input array.
+	 * @return  array   The resulted array to store in the db.
+	 */
 	public function process_settings( $settings, $option )
 	{
 		return $settings;
 	}
 
 
-	/*
-	Displays the current admin page.  Only called when tab is not specified. 
-	*/
+	/**
+	 * Displays the current admin page.  Only called when tab is not specified. 
+	 */
 	abstract public function display();
 	
 	
-	/*
+	/**
+	 * Processes and displays the output of an ajax request.
+	 */
+	public function ajax_request( $action, $input, &$output ) { }
+
 	
-	*/
+	/**
+	 * Gets the URL to use as the action when constructing a form.
+	 * @param   bool  $use_settings_api  True if the Settings API's saving mechinism will
+	 *                                   be used.  Does not work with network admin pages.
+	 * @return  string  The constructed form url.
+	 */
 	public function get_form_url( $use_settings_api = true )
 	{
 		if( $use_settings_api && !$this->use_custom_settings && !is_network_admin() )
@@ -395,9 +420,14 @@ abstract class APL_AdminPage
 	}
 	
 	
-	/*
-	*/
-	public function form_start( $use_settings_api = true )
+	/**
+	 * Displays the start form tag and mandatory fields when constructing a form using apl.
+	 * @param  string  $class             The class to give the form.
+	 * @param  bool    $use_settings_api  True if the Settings API's saving mechinism will be
+	 *                                    used.  Does not work with network admin pages.
+	 * @param  array   $attributes  Additional attributes to add to the form tag.
+	 */
+	public function form_start( $class, $use_settings_api = true, $attributes = array() )
 	{
 		?>
 
@@ -408,8 +438,9 @@ abstract class APL_AdminPage
 	}
 	
 	
-	/*
-	*/
+	/**
+	 * Displays the end form tag.
+	 */
 	public function form_end()
 	{
 		?>
@@ -418,6 +449,10 @@ abstract class APL_AdminPage
 	}
 	
 	
+	/**
+	 * Displays a "Settings API" section that were added in "add_settings_sections".
+	 * @param  string  $section_name  The name/slug of the section.
+	 */
 	public function print_section( $section_name )
 	{
 		do_settings_sections( $this->name.':'.$section_name );

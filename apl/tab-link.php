@@ -1,6 +1,12 @@
 <?php
-
-
+/**
+ * APL_TabLink
+ * 
+ * The APL_TabLink class is the representation of a tab that link to another page.
+ * 
+ * @package    apl
+ * @author     Crystal Barton <cbarto11@uncc.edu>
+ */
 if( !class_exists('APL_TabLink') ):
 class APL_TabLink
 {
@@ -9,12 +15,11 @@ class APL_TabLink
 	public $link;		// The link that the tab connects to.
 	
 
-	/*
-	Default Constructor.
-	Initatializes the default values for the tab-admin page.
-	@param  $title  [string]  The title of the tab.
-	@param  $link   [string]  The link that the tab connects to.
-	*/
+	/**
+	 * Creates an APL_TabLink object.
+	 * @param  $title  [string]  The title of the tab.
+	 * @param  $link   [string]  The link that the tab connects to.
+	 */
 	public function __construct( $title, $link )
 	{
 		$this->title = $title;
@@ -22,9 +27,9 @@ class APL_TabLink
 	}
 	
 
-	/*
-	Displays the tab link for the this tab.
-	*/
+	/**
+	 * Displays the tab link for the this tab.
+	 */
 	public function display_tab()
 	{
 		?>
