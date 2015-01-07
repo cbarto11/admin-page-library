@@ -5,7 +5,6 @@ require_once( dirname(__FILE__).'/functions.php' );
 require_once( dirname(__FILE__).'/helper.php' );
 require_once( dirname(__FILE__).'/admin-menu.php' );
 require_once( dirname(__FILE__).'/admin-page.php' );
-require_once( dirname(__FILE__).'/ajax-admin-page.php' );
 require_once( dirname(__FILE__).'/tab-admin-page.php' );
 require_once( dirname(__FILE__).'/tab-link.php' );
 
