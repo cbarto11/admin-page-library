@@ -31,8 +31,6 @@ class APL_Handler
 		$this->disable_redirect = false;
 		$this->use_settings_api = true;
 		
-		add_filter( 'query_vars', array($this, 'query_vars') );
-		add_action( 'parse_request', array($this, 'parse_request') );
 		add_action( 'admin_enqueue_scripts', array($this, 'enqueue_scripts') );
 		add_action( 'wp_ajax_apl-ajax-action', array($this, 'perform_ajax_request') );
 	}
@@ -147,22 +145,7 @@ class APL_Handler
 	}
 	
 	
-	/*
-	Parse request to find correct WordPress query.
-	@param  $wp  [ptr->WP]  WordPress environment setup class.
-	*/
-	public function parse_request( &$wp )
 	{
-		global $wp;
-// 		if( array_key_exists('connections-spoke-api', $wp->query_vars) )
-// 		{
-// 			require_once(dirname(__FILE__).'/api.php');
-// 			ConnectionsSpoke_Api::init();
-// 			ConnectionsSpoke_Api::process_post();
-// 			ConnectionsSpoke_Api::output_data();
-// 			exit();
-// 		}
-		return;
 	}
 	
 	
