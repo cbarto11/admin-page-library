@@ -33,6 +33,8 @@ class APL_Handler
 		
 		add_filter( 'query_vars', array($this, 'query_vars') );
 		add_action( 'parse_request', array($this, 'parse_request') );
+		add_action( 'admin_enqueue_scripts', array($this, 'enqueue_scripts') );
+		add_action( 'wp_ajax_apl-ajax-action', array($this, 'perform_ajax_request') );
 	}
 	
 

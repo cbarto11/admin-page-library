@@ -126,10 +126,23 @@ abstract class APL_AdminPage
 	}
 	
 	
-	/*
-	Sets the page's handler.
-	@param  $handler  [APL_Handler]  The handler controlling the page.
-	*/
+	/**
+	 * Checks if this is the page that should perform an apl ajax request.  If the current
+	 * page matches the request and a tab is not selected, then the ajax request is processed.
+	 */
+	public function perform_ajax_request()
+	{
+		$output = array( 'status' => true, 'message' => '' );
+		$this->ajax_request( $_POST['apl-ajax-action'], $_POST['input'], $output );
+		echo json_encode($output);
+		exit;
+	}
+	
+	
+	/**
+	 * Sets the page's handler.
+	 * @param  APL_Handler  $handler  The handler controlling the page.
+	 */
 	public function set_handler( $handler )
 	{
 		$this->handler = $handler;
