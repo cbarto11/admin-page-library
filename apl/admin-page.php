@@ -409,7 +409,7 @@ abstract class APL_AdminPage
 	/**
 	 * Displays the current admin page.  Only called when tab is not specified. 
 	 */
-	abstract public function display();
+	public function display() { }
 	
 	
 	/**
