@@ -16,7 +16,9 @@ abstract class APL_TabAdminPage extends APL_AdminPage
 	protected $page;			// The parent admin page that contains the tab.
 	protected $is_current_tab;	// True if this is current tab being shown.
 	
-
+	public    $display_tab;     // True if tab should appear in tab list, else False.
+	
+	
 	/**
 	 * Creates an APL_TabAdminPage object.
 	 * @param  string         $name        The name/slug of the tab.
@@ -26,8 +28,10 @@ abstract class APL_TabAdminPage extends APL_AdminPage
 	 */
 	public function __construct( $name, $title, $page, $capability = 'administrator' )
 	{
-		parent::__construct( $name, $title, $title, $capability );
 		$this->page = $page;
+		$this->display_tab = true;
+
+		parent::__construct( $name, $tab_title, $page_title, $capability );
 	}
 	
 	
@@ -76,6 +80,7 @@ abstract class APL_TabAdminPage extends APL_AdminPage
 	 */
 	public function display_tab()
 	{
+		if( !$this->display_tab ) return;
 		?>
 		
 		<a href="?page=<?php echo $this->page->name; ?>&tab=<?php echo $this->name; ?>"
