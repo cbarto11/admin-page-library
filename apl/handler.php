@@ -1,10 +1,4 @@
 <?php
-require_once( dirname(__FILE__).'/functions.php' );
-require_once( dirname(__FILE__).'/admin-menu.php' );
-require_once( dirname(__FILE__).'/admin-page.php' );
-require_once( dirname(__FILE__).'/tab-admin-page.php' );
-require_once( dirname(__FILE__).'/tab-link.php' );
-
 
 /**
  * APL_Handler
