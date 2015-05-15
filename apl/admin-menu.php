@@ -98,7 +98,7 @@ class APL_AdminMenu
 	{
 		foreach( $this->pages as $page )
 		{
-			if( $page_name === $page->name )
+			if( $page_name === $page->get_name() )
 				return $page;
 		}
 		
@@ -119,7 +119,7 @@ class APL_AdminMenu
  		{
  			?>
  			<a 
-			 href="?page=<?php echo $page->name; ?>"
+			 href="?page=<?php echo $page->get_name(); ?>"
 			 class="nav-tab <?php if( $page->is_current_page ) echo 'active'; ?>">
 				<?php echo $page->page_title; ?>
 			</a>

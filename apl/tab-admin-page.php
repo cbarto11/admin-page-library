@@ -21,12 +21,13 @@ abstract class APL_TabAdminPage extends APL_AdminPage
 	
 	/**
 	 * Creates an APL_TabAdminPage object.
-	 * @param  string         $name        The name/slug of the tab.
-	 * @param  string         $title       The title of the tab.
 	 * @param  APL_AdminPage  $page        The parent admin page that contains the tab.
+	 * @param  string         $name        The name/slug of the tab.
+	 * @param  string         $tab_title   The title of the tab.
+	 * @param  string         $page_title  The title of the page when tab is active.
 	 * @param  string         $capability  The capability needed to displayed to the user.
 	 */
-	public function __construct( $name, $title, $page, $capability = 'administrator' )
+	public function __construct( $page, $name, $tab_title, $page_title = null, $capability = 'administrator' )
 	{
 		$this->page = $page;
 		$this->display_tab = true;
@@ -55,13 +56,6 @@ abstract class APL_TabAdminPage extends APL_AdminPage
 				add_action( 'admin_head', array($this, 'add_head_script') );
 				break;
 		}
-		
-		add_action( $this->get_name().'-register-settings', array($this, 'register_settings') );
-		add_action( $this->get_name().'-add-settings-sections', array($this, 'add_settings_sections') );
-		add_action( $this->get_name().'-add-settings-fields', array($this, 'add_settings_fields') );
-			
-		add_filter( $this->get_name().'-process-input', array($this, 'process_settings'), 99, 2 );
-		add_action( 'admin_init', array($this, 'process_page') );
 	}
 		
 
@@ -83,9 +77,9 @@ abstract class APL_TabAdminPage extends APL_AdminPage
 		if( !$this->display_tab ) return;
 		?>
 		
-		<a href="?page=<?php echo $this->page->name; ?>&tab=<?php echo $this->name; ?>"
+		<a href="?page=<?php echo $this->page->get_name(); ?>&tab=<?php echo $this->name; ?>"
 		   class="nav-tab <?php if( $this == $this->handler->current_tab ) echo 'active'; ?>">
-			<?php echo $this->page_title; ?>
+			<?php echo $this->menu_title; ?>
 		</a>
 		
 		<?php

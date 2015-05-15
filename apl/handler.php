@@ -15,7 +15,6 @@ require_once( dirname(__FILE__).'/tab-link.php' );
  * @package    apl
  * @author     Crystal Barton <cbarto11@uncc.edu>
  */
-
 if( !class_exists('APL_Handler') ):
 class APL_Handler
 {
@@ -25,13 +24,16 @@ class APL_Handler
 	
 	public $current_page;		// The APL_AdminPage object of the current page.
 	public $current_tab;		// The APL_TabAdminPage object of the current tab.
+	public $controller;         // The controlling APL_AdminPage or APL_TabAdminPage object.
 	
 	public $disable_redirect;   // False if we need to attempt to redirect when POST data
 	                            // is present, otherwise True.
+	public $force_redirect_url;	//
 	
 	public $is_network_admin;   // True if only show pages on the network admin menu,
 	                            // otherwise False to only show on a site's admin menu.
 	
+
 
 	/**
 	 * Creates an APL_Handler object.
@@ -40,13 +42,17 @@ class APL_Handler
 	 */
 	public function __construct( $is_network_admin = false )
 	{
+		apl_start_session();
+		
 		$this->menus = array();
 		$this->pages = array();
 		
 		$this->current_page = null;
 		$this->current_tab = null;
 		
-		$this->disable_redirect = false;
+		$this->disable_redirect = true;
+		$this->force_redirect_url = false;
+		
 		$this->use_settings_api = true;
 		
 		$this->is_network_admin = $is_network_admin;
@@ -60,8 +66,8 @@ class APL_Handler
 			add_action( 'admin_menu', array($this, 'admin_menu_setup'), 10 );
 		}
 
-		add_action( 'admin_enqueue_scripts', array($this, 'enqueue_scripts') );
 		add_action( 'wp_ajax_apl-ajax-action', array($this, 'perform_ajax_request') );
+		add_action( 'admin_init', array($this, 'possible_redirect'), 99999 );
 	}
 	
 
@@ -80,7 +86,7 @@ class APL_Handler
 	 * Add a page to the main admin menu.
 	 * @param  APL_AdminPage  $page    Admin page to be displayed in the main admin menu.
 	 * @param  string         $parent  The parent page's name/slug.
-	*/
+	 */
 	public function add_page( $page, $parent = null )
 	{
 		if( $parent === null )
@@ -99,21 +105,56 @@ class APL_Handler
 		$this->pages[$parent][] = $page;
 	}
 	
+	
 	/**
-	 * Sets up all the admin menus and pages.
+	 * Setups the current admin page/tab, then sets up the needed hooks.
 	 */
 	public function setup()
 	{
 		$this->set_current_page();
-
-		add_action( 'admin_init', array($this, 'register_settings') );
 		
-		foreach( $this->menus as $menu )
+		if( defined('DOING_AJAX') && DOING_AJAX ) return;
+		
+		global $pagenow;
+		switch( $pagenow )
 		{
-			$menu->setup();
+			case 'options.php': break;
+			
+			default:
+				if( $this->current_page )
+				{
+					add_action( 'admin_enqueue_scripts', array($this->current_page, 'enqueue_scripts') );
+					add_action( 'admin_head', array($this->current_page, 'add_head_script') );
+				}
+				if( $this->current_tab )
+				{
+					add_action( 'admin_enqueue_scripts', array($this->current_tab, 'enqueue_scripts') );
+					add_action( 'admin_head', array($this->current_tab, 'add_head_script') );
+				}
+				break;
 		}
 		
-		foreach( $this->pages as $page )
+		if( $this->controller )
+		{
+			add_action( 'admin_init', array($this->controller, 'init') );
+			
+			add_action( 'admin_init', array($this->controller, 'register_settings') );
+			add_action( 'admin_init', array($this->controller, 'add_settings_sections') );
+			add_action( 'admin_init', array($this->controller, 'add_settings_fields') );
+			
+			add_action( 'admin_init', array($this->controller, 'process_page') );
+		
+			add_filter( 'set-screen-option', array($this->controller, 'save_screen_options'), 10, 3);
+		}		
+	}
+	
+	
+	/**
+	 * Sets up all the admin menus and pages.
+	 */
+	public function admin_menu_setup()
+	{
+		foreach( $this->menus as $menu )
 		{
 			$menu->admin_menu_setup();
 		}
@@ -171,6 +212,7 @@ class APL_Handler
 			default:
 				$this->current_page = ( !empty($_GET['page']) ? $_GET['page'] : null );
 				$this->current_tab = ( isset($_GET['tab']) ? $_GET['tab'] : null );
+				$this->disable_redirect = false;
 				break;
 		}
 		
@@ -181,18 +223,29 @@ class APL_Handler
 			if( $this->current_page )
 			{
 				if( $this->current_tab )
-				{
 					$this->current_tab = $this->current_page->get_tab_by_name($this->current_tab);	
-				}
 				
 				if( !$this->current_tab )
-				{
 					$this->current_tab = $this->current_page->get_default_tab();
-				}
 			}
 		}
-		
+
+		$this->controller = null;
 		if( !$this->current_page )
+		{
+			$this->current_page = null;
+			$this->current_tab = null;
+		}
+		elseif( $this->current_tab )
+		{
+			$this->controller = $this->current_tab;
+		}
+		elseif( $this->current_page )
+		{
+			$this->controller = $this->current_page;
+		}
+		
+		if( !$this->controller )
 		{
 			$this->disable_redirect = true;
 		}
@@ -205,7 +258,7 @@ class APL_Handler
 	 * @return  APL_AdminPage|false  The APL_AdminPage object that matches the page name,
 	 *                               otherwise False.
 	 */
-	protected function get_page( $page_name )
+	public function get_page( $page_name )
 	{
 		foreach( $this->menus as $menu )
 		{
@@ -213,33 +266,16 @@ class APL_Handler
 				return $p;
 		}
 		
-		foreach( $this->pages as $page )
+		foreach( $this->pages as $pagetree )
 		{
-			if( $page_name === $page->name )
-				return $page;
+			foreach( $pagetree as $page )
+			{
+				if( $page_name === $page->get_name() )
+					return $page;
+			}
 		}
 
 		return false;
-	}
-	
-
-	/**
-	 * Registers the settings, sections, fields, and processing for the settings API.
-	 */
-	public function register_settings()
-	{
-		do_action( $this->get_full_page_name().'-register-settings' );
-		do_action( $this->get_full_page_name().'-add-settings-sections' );
-		do_action( $this->get_full_page_name().'-add-settings-fields' );
-	}
-	
-	
-	/**
-	 * Enqueue the default and needed styles and scripts for the admin page library.
-	 */
-	public function enqueue_scripts()
-	{
-		wp_enqueue_script( 'apl-ajax', plugins_url('apl/ajax.js', __FILE__), array('jquery') );
 	}
 	
 		
@@ -250,35 +286,30 @@ class APL_Handler
 	 */
 	public function possible_redirect()
 	{
-		if( (empty($_POST)) || ($this->disable_redirect) ) return;
-		
-		$redirect_url = ( isset($_POST['_wp_http_referer']) ? $_POST['_wp_http_referer'] : apl_get_page_url() );
+		if( (!$this->force_redirect_url) && ((empty($_POST)) || ($this->disable_redirect)) ) return;
 		
 		unset($_POST);
-		
- 		wp_redirect( $redirect_url );
-		exit;
+		$this->redirect();
 	}
 	
 	
 	/**
-	 * Returns the full name/slug of the combined current page and tab.
-	 * @return  string  The full name of the page/tab pair.
+	 * Redirects to the http referer, if exists, else the current page.
 	 */
-	public function get_full_page_name()
+	public function redirect()
 	{
-		$name = '';
-		
-		if( $this->current_page )
+		if( $this->controller )
 		{
-			$name .= $this->current_page->name;
-			if( $this->current_tab )
-			{
-				$name .= '-'.$this->current_tab->name;
-			}
+			$this->controller->save_notice();
+			$this->controller->save_error();
 		}
 		
-		return $name;
+		$redirect_url = ( $this->force_redirect_url ? $this->force_redirect_url : 
+			( !empty($_REQUEST['_wp_http_referer']) ? $_REQUEST['_wp_http_referer'] : apl_get_page_url() )
+		);
+		
+		wp_redirect( $redirect_url );
+		exit;
 	}
 	
 	
@@ -288,7 +319,7 @@ class APL_Handler
 	 */
 	public function get_page_name()
 	{
-		if( $this->current_page ) return $this->current_page->name;
+		if( $this->current_page ) return $this->current_page->get_name();
 		return null;
 	}
 	
@@ -300,6 +331,17 @@ class APL_Handler
 	public function get_tab_name()
 	{
 		if( $this->current_tab ) return $this->current_tab->name;
+		return null;
+	}
+	
+	
+	/**
+	 * Returns the name of the current controller (page or tab).
+	 * @return  string|null  The name of the current controller, if exists, otherwise null.
+	 */
+	public function get_name()
+	{
+		if( $this->controller ) return $this->controller->get_name();
 		return null;
 	}
 	

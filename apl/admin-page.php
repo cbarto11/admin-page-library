@@ -9,6 +9,7 @@
  * @author     Crystal Barton <cbarto11@uncc.edu>
  */
 
+
 if( !class_exists('APL_AdminPage') ):
 abstract class APL_AdminPage
 {
@@ -29,25 +30,35 @@ abstract class APL_AdminPage
 	protected $tab_names;		// The names of the tabs with their index within the
 								//   the $tabs array (for searching purposes).
 	
-	public $use_custom_settings;// True if use the apl's custom "Settings API".
-	protected $settings;		// All settings that have been registered.
+	public $use_custom_settings;	// True if use the apl's custom Settings API.
+	protected $settings;			// All settings that have been registered.
+	
+	public $display_page_tab_list;  // True if the tab list should be displayed.
+	
+	public $screen_options;
+	public $selectable_columns;
+	
+	protected $ajax;
+	
+	protected $notices;
+	protected $errors;
 
 	
 	/**
 	 * Creates an APL_AdminPage object.
 	 * @param  string  $name        The name/slug of the page.
-	 * @param  string  $page_title  The title shown on the top of the page.
 	 * @param  string  $menu_title  The title shown on the left menu.
+	 * @param  string  $page_title  The title shown on the top of the page.
 	 * @param  string  $capability  The capability needed to displayed to the user.
 	 */
-	public function __construct( $name, $page_title, $menu_title = null, $capability = 'administrator' )
+	public function __construct( $name, $menu_title, $page_title, $capability = 'administrator' )
 	{
 		$this->handler = null;
 		$this->menu = null;
 		
 		$this->name = $name;
+		$this->menu_title = $menu_title;
 		$this->page_title = $page_title;
-		$this->menu_title = ( $menu_title !== null ? $menu_title : $page_title );
 		$this->capability = $capability;
 		
 		$this->is_main_page = false;
@@ -57,10 +68,35 @@ abstract class APL_AdminPage
 		$this->tabs = array();
 		$this->tab_names = array();
 		
-		$this->use_custom_settings = false;
+		if( is_network_admin() )
+			$this->use_custom_settings = true;
+		else
+			$this->use_custom_settings = false;
 		$this->settings = array();
+		
+		$this->display_page_tab_list = true;
+		
+		$this->screen_options = array();
+		$this->selectable_columns = array();
+		
+		$this->ajax = array();
+		
+		$this->notices = array();
+		$this->errors = array();
 	}
-
+	
+	
+	/**
+	 * Initialize the admin page.  Called during "admin_init" action.
+	 */
+	public function init() { }
+	
+	
+	/**
+	 * Loads the admin page.  Called during "load-{page}" action.
+	 */
+	public function load() { }
+	
 	
 	/**
 	 * Adds the admin page to the main menu and sets up all values, actions and filters.
@@ -77,7 +113,7 @@ abstract class APL_AdminPage
 				$this->page_title, 
 				$this->menu_title,
 				$this->capability,
-				$this->name,
+				$this->get_name(),
 				array( $this, 'display_page' )
 			);
 		}
@@ -88,35 +124,20 @@ abstract class APL_AdminPage
 				$this->page_title,
 				$this->menu_title,
 				$this->capability,
-				$this->name,
+				$this->get_name(),
 				array( $this, 'display_page' )
 			);
 		}
 		
 		if( $this->handler->current_page !== $this ) return;
-		
-		$this->is_current_page = true;
-		
-        add_action( "load-$hook", array( $this, 'add_screen_options' ) );
 
-		global $pagenow;
-		switch( $pagenow )
+		if( $this->handler->controller )
 		{
-			case 'options.php':
-				break;
-			
-			default:
-				add_action( 'admin_enqueue_scripts', array($this, 'enqueue_scripts') );
-				add_action( 'admin_head', array($this, 'add_head_script') );
-				break;
+			add_action( "load-$hook", array($this->handler->controller, 'load') );
+ 			add_action( "load-$hook", array($this->handler->controller, 'setup_screen_options') );
 		}
-		
-		add_action( $this->get_name().'-register-settings', array($this, 'register_settings') );
-		add_action( $this->get_name().'-add-settings-sections', array($this, 'add_settings_sections') );
-		add_action( $this->get_name().'-add-settings-fields', array($this, 'add_settings_fields') );
-			
-		add_filter( $this->get_name().'-process-input', array($this, 'process_settings'), 99, 2 );
-		add_action( 'admin_init', array($this, 'process_page') );
+				
+		$this->is_current_page = true;
 		
 		foreach( $this->tabs as $tab )
 		{
@@ -131,9 +152,26 @@ abstract class APL_AdminPage
 	 */
 	public function perform_ajax_request()
 	{
-		$output = array( 'status' => true, 'message' => '' );
-		$this->ajax_request( $_POST['apl-ajax-action'], $_POST['input'], $output );
-		echo json_encode($output);
+		$this->ajax_success();
+		
+		if( !isset($_POST['apl-ajax-action']) || !isset($_POST['input']) || !isset($_POST['nonce']) )
+		{
+			$this->ajax_failed( 'The submitted data is not complete.' );
+			return;
+		}
+		
+		if( !wp_verify_nonce($_POST['nonce'], $this->get_name().'-'.$_POST['apl-ajax-action'].'-ajax-request') )
+		{
+			$this->ajax_failed( 'The submitted data cannot be verified.' );
+			return;
+		}
+		
+		$this->output = array( 'ajax' => array() );
+		$this->ajax_success();
+		
+		$this->ajax_request( $_POST['apl-ajax-action'], $_POST['input'], $_POST['count'], $_POST['total'] );
+		
+		$this->ajax_output();
 		exit;
 	}
 	
@@ -185,7 +223,7 @@ abstract class APL_AdminPage
 	
 	/**
 	 * Determines the default tab to be chosen when the tab isn't specified.
-	 * @return  string  The name of the tab. 
+	 * @return  APL_TabAdminPage|null  The name of the tab, if found, else null. 
 	 */
 	public function get_default_tab()
 	{
@@ -229,6 +267,107 @@ abstract class APL_AdminPage
 		}
 		return null;
 	}
+
+
+	/**
+	 * Add the screen options for the page.
+	 */
+	public function add_screen_options() { }
+	
+
+	/**
+	 * Sets up the screen options for the admin page.
+	 * Called during "load-{page}" action after the load function.
+	 */
+	public function setup_screen_options()
+	{
+		$this->add_screen_options();
+		
+		foreach( $this->screen_options as $so )
+		{
+			add_screen_option( $so['screen_option'], $so );
+		}
+		
+		$screen = get_current_screen();
+		add_filter( "manage_{$screen->id}_columns", array($this, 'get_selectable_columns') );
+	}
+	
+	
+	/**
+	 * Adds the per_page option to the screen options list.  
+	 * This option is used to alter number of items are shown in a list table.
+	 * @param  string  $option   Unique name for option.
+	 * @param  string  $label    The label/title to use when displaying.
+	 * @param  string  $default  The default value.
+	 */
+	public function add_per_page_screen_option( $option, $label, $default )
+	{
+		$this->screen_options[$option] = array(
+			'screen_option' => 'per_page',
+			'option' => $option,
+			'label' => $label,
+			'default' => $default,
+		);
+	}
+	
+	
+	/**
+	 * Add the selectable columns to the screen options.
+	 * @param  array  $columns  An array of columns that will be selectable.
+	 */
+	public function add_selectable_columns( $columns )
+	{
+		if( is_array($columns) )
+		{
+			$this->selectable_columns = array_merge( $this->selectable_columns, $columns );
+		}
+		else
+		{
+			$this->selectable_columns[]  = $columns;
+		}
+	}
+
+
+	/**
+	 * Gets the selectable columns for the list table.
+	 * @return  array  The selectable columns array.
+	 */
+	public function get_selectable_columns()
+	{
+		return $this->selectable_columns;
+	}
+	
+	
+	/**
+	 * Gets the default value of a screen option.
+	 * @param   string  $option  The option's name.
+	 * @return  string  The default value of the option.
+	 */
+	public function get_screen_option( $option )
+	{
+		if( !in_array($option, array_keys($this->screen_options)) ) return false;
+		
+		$value = get_user_option($option);
+		if( $value === false && isset($this->screen_options[$option]['default']) )
+			$value = $this->screen_options[$option]['default'];
+			
+		return $value;
+	}
+	
+	
+	/**
+	 * Filter a screen option value before it is set.
+	 * Called during "set-screen-option" filter.
+	 * @param   bool    $status  
+	 * @param   string  $option  The name of the option.
+	 * @param   string  $value   The new value of the option.
+	 * @return  string  The fitlered value of the option.
+	 */
+	public function save_screen_options( $status, $option, $value )
+	{
+		update_user_option( get_current_user_id(), $option, $value );
+		return $value;
+	}
 	
 	
 	/**
@@ -239,6 +378,7 @@ abstract class APL_AdminPage
 	
 	/**
 	 * HTML/JavaScript to add to the <head> portion of the page. 
+	 * Called during "admin_head" action.
 	 */
 	public function add_head_script() { }
 	
@@ -253,18 +393,19 @@ abstract class APL_AdminPage
 	 * Registers the settings key for the Settings API. The settings key is associated
 	 * with an option key.  A filter is added for the option key, associated with
 	 * process_settings function, which should be overwritten by child classes.
-	 * @param  string  $key  The key for the data in the $_POST array, as well as the key
-	 *                       for the option in the options table.
+	 * @param  string  $option  The key for the data in the $_POST array, as well as the 
+	 *                          key for the option in the options table.
+	 * @param  bool    $merge   
 	 */
-	public function register_setting( $key )
+	public function register_setting( $option, $merge = true )
 	{
 		if( !$this->use_custom_settings )
 		{
-			register_setting( $this->name, $key );
+			register_setting( $this->handler->get_page_name(), $option );
 		}
-
-		add_filter( 'sanitize_option_'.$key, array($this, 'process_settings'), 10, 2 );
-		$this->settings[] = $key;
+	
+		add_filter( 'sanitize_option_'.$option, array($this, 'process_settings'), 10, 2 );
+		$this->settings[] = array( 'option' => $option, 'merge' => $merge );
 	}
 	
 	
@@ -286,10 +427,12 @@ abstract class APL_AdminPage
 	 * @param  string  $title     The title to display for the the section.
 	 * @param  string  $callback  The function to call when displaying the section.
 	 */
-	public function add_section( $name, $title, $callback )
+	public function add_section( $name, $title, $callback = null )
 	{
+		if( $callback === null ) $callback = 'no_echo';
+		
 		add_settings_section(
-			$name, $title, array( $this, $callback ), $this->name.':'.$name
+			$name, $title, array( $this, $callback ), $this->get_name().':'.$name
 		);
 	}
 	
@@ -302,18 +445,21 @@ abstract class APL_AdminPage
 	 * @param  string  $callback  The function to call when displaying the section.
 	 * @param  array   $args      The arguments to pass to the callback function.
 	 */
-	public function add_field( $section, $name, $title, $callback, $args = array() )
+	public function add_field( $section, $name, $title, $callback = null, $args = array() )
 	{
+		if( $callback === null ) $callback = 'no_echo';
+		
 		add_settings_field( 
-			$name, $title, array( $this, $callback ), $this->name.':'.$section, $section, $args
+			$name, $title, array( $this, $callback ), $this->get_name().':'.$section, $section, $args
 		);
 	}
 	
 	
 	/**
-	 * Add the admin page's screen options.  
+	 * 
 	 */
-	public function add_screen_options() { }
+	public function no_echo() { }
+	
 	
 	
 	/**
@@ -322,27 +468,36 @@ abstract class APL_AdminPage
 	 */
 	public function process_page()
 	{
-		if( empty($_POST) ) return;
+		if( !isset($_REQUEST['action']) && !isset($_REQUEST['action2']) ) return;
 		
-		if( !isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], $this->get_name().'-options') )
+		if( !empty($_POST) )
 		{
-			// TODO: error... The submitted data cannot be verified.
-			return;
-		}
-
-		if( ($this->use_custom_settings) && (isset($_POST['action'])) && ($_POST['action'] == 'update') )
-		{
-			foreach( $this->settings as $setting )
+			if( !isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], $this->get_name().'-options') )
 			{
-				if( !isset($_POST[$setting]) ) continue;
-				
-				if( is_network_admin() )
+				$this->set_error( 'The submitted data cannot be verified.' );
+				return;
+			}
+
+			if( ($this->use_custom_settings) && ($_POST['action'] == 'update') )
+			{
+				foreach( $this->settings as $setting )
 				{
-					update_site_option( $setting, $_POST[$setting] );
-				}
-				else
-				{
-					update_option( $setting, $_POST[$setting] );
+					$option = $setting['key'];
+					
+					if( !isset($_POST[$option]) ) continue;
+					$settings = $_POST[$option];
+					
+					if( $setting['merge'] === true )
+						$settings = $this->merge_settings( $settings, $option );
+					
+					if( is_network_admin() )
+					{
+						update_site_option( $option, $settings );
+					}
+					else
+					{
+						update_option( $option, $settings );
+					}
 				}
 			}
 		}
@@ -356,11 +511,28 @@ abstract class APL_AdminPage
 	 */
 	public function display_page()
 	{
+		$menu_name = $this->menu;
+		if( $this->menu instanceof APL_AdminMenu ) $menu_name = $this->menu->name;
+		
+		$remove = array( '.php' );
+		$menu_name = str_replace( $remove, '', $menu_name );
+		
+		$dashes = array( '?', '=' );
+		$menu_name = str_replace( $dashes, '-', $menu_name );
+		
+		$menu_name = sanitize_title($menu_name);
 		?>
-		<div class="wrap">
+		<div class="wrap <?php echo $menu_name; ?> <?php echo $this->name; ?> <?php echo $this->get_name(); ?>">
 	 
 			<div id="icon-themes" class="icon32"></div>
-			<h2><?php echo $this->page_title; ?></h2>
+			
+			<?php
+			if( $this->handler->current_tab && $this->handler->current_tab->page_title !== null ):
+				?><h2><?php echo $this->handler->current_tab->page_title; ?></h2><?php
+			else:
+				?><h2><?php echo $this->page_title; ?></h2><?php
+			endif;
+			?>
 			<?php settings_errors(); ?>
 		 
 		 	<?php 
@@ -368,13 +540,20 @@ abstract class APL_AdminPage
 		 	{
 		 		$this->menu->display_tab_list();
 		 	}
-		 	$this->display_tab_list();
+		 	
+		 	if( $this->display_page_tab_list )
+		 	{
+		 		$this->display_tab_list();
+		 	}
 		 	?>
 		 	
 		 	<div class="page-contents">
 		 	
-		 	<?php
-		 	
+			<?php
+			
+			$this->display_notice();
+			$this->display_error();
+			
 		 	if( $this->handler->current_tab ):
 		 		$this->handler->current_tab->display();
 		 	else:
@@ -403,6 +582,39 @@ abstract class APL_AdminPage
 	 */
 	public function process_settings( $settings, $option )
 	{
+		foreach( $this->settings as $setting )
+		{
+			if( !$setting['option'] === $option ) continue;
+			if( $setting['merge'] !== true ) break;
+			
+			$settings = $this->merge_settings( $settings, $option );
+		}
+		
+		return $settings;
+	}
+	
+	
+	/**
+	 * Merges the settings of an option with the existing settings in the database.
+	 * @param   array   $settings  The new settings for an option.
+	 * @param   string  $option    The option name.
+	 * @return  array   The merged settings.
+	 */
+	public function merge_settings( $settings, $option )
+	{
+		if( is_network_admin() )
+		{
+			$old_settings = get_site_option( $option, array() );
+			$settings = array_merge( $old_settings, $settings );
+		}
+		else
+		{
+			$old_settings = get_option( $option, array() );
+			vtt_print($old_settings);
+			vtt_print($settings);
+			$settings = array_merge( $old_settings, $settings );
+		}
+		
 		return $settings;
 	}
 
@@ -414,50 +626,190 @@ abstract class APL_AdminPage
 	
 	
 	/**
-	 * Processes and displays the output of an ajax request.
+	 * Displays all of the Settings sections and fields for the page.
 	 */
-	public function ajax_request( $action, $input, &$output ) { }
+	public function print_settings()
+	{
+		global $wp_settings_sections;
+		
+		$this->form_start_settings_api();
+		?>
+		
+			<div class="top-submit"><?php submit_button(); ?></div>
+			<div style="clear:both"></div>
+			<input type="hidden" name="page" value="<?php echo $this->handler->get_page_name(); ?>" />
+			<input type="hidden" name="tab" value="<?php echo $this->handler->get_tab_name(); ?>" />
+			
+			<?php
+			do_settings_sections( $this->get_name() );
+			
+			$tab_section = $this->get_name().':';
+			foreach( array_keys($wp_settings_sections) as $section_name )
+			{
+				if( substr($section_name, 0, strlen($tab_section)) === $tab_section )
+				{
+					do_settings_sections( $section_name );
+				}
+			}
+			?>
+			
+			<div style="clear:both"></div>
+			<div class="bottom-submit"><?php submit_button(); ?></div>
+			
+		<?php
+		$this->form_end();
+	}
+	
+	
+	
+	/**
+	 * Processes and displays the output of an ajax request.
+	 * @param   string  $action  The AJAX action.
+	 * @param   array   $input   The AJAX input array.
+	 * @param   int     $count   When multiple AJAX calls are made, the current count.
+	 * @param   int     $total   When multiple AJAX calls are made, the total count.
+	 */
+	public function ajax_request( $action, $input, $count, $total ) { }
 
 	
 	/**
-	 * Gets the URL to use as the action when constructing a form.
-	 * @param   bool  $use_settings_api  True if the Settings API's saving mechinism will
-	 *                                   be used.  Does not work with network admin pages.
-	 * @return  string  The constructed form url.
+	 * Displays the start of form when using the Settings API.
+	 * @param  array|null  $attributes  Additional attributes to add to the start form tag.
 	 */
-	public function get_form_url( $use_settings_api = true )
+	public function form_start_settings_api( $attributes = array() )
 	{
-		if( $use_settings_api && !$this->use_custom_settings && !is_network_admin() )
+		if( $this->use_custom_settings )
 		{
-			return 'options.php';
+			$this->form_start( null, $attributes, 'update' );
+			return;
 		}
-
-		return apl_get_page_url();
+		
+		?>
+		<form action="options.php" method="POST" 
+		    <?php
+		    foreach( $attributes as $key => $value ):
+		      	echo $key.'="'.$value.'" ';
+		    endforeach; ?>
+		    >   
+		<?php
+		
+		settings_fields( $this->handler->get_page_name() );
 	}
 	
 	
 	/**
-	 * Displays the start form tag and mandatory fields when constructing a form using apl.
-	 * @param  string  $class             The class to give the form.
-	 * @param  bool    $use_settings_api  True if the Settings API's saving mechinism will be
-	 *                                    used.  Does not work with network admin pages.
-	 * @param  array   $attributes  Additional attributes to add to the form tag.
+	 * Displays the start form tag and mandatory fields for the start of a POST form.
+	 * Most forms should be in this format.
+	 * @param  string|null  $class       The class of the form.
+	 * @param  array|null   $attributes  Additional attributes to add to the start form tag.
+	 * @param  string|null  $action      The action the form will perform.
+	 * @param  array|null   $query       Additional query args for the form url/action.
 	 */
-	public function form_start( $class, $use_settings_api = true, $attributes = array() )
+	public function form_start( $class = null, $attributes = array(), $action = null, $query = array() )
 	{
+		if( !is_array($attributes) ) $attributes = array();
+		if( !is_array($query) ) $query = array();
+		
 		?>
-
-		<form action="<?php echo $this->get_form_url( $use_settings_api ); ?>" 
+		<form action="<?php echo $this->get_page_url( $query ); ?>" 
 		      method="POST" 
 		      class="<?php echo $class; ?>"
-		      <?php
-		      foreach( $attributes as $key => $value ):
-		      	echo $key.'="'.$value.'" ';
-		      endforeach;
-		      ?>>
-		<?php settings_fields( $this->name ); ?>
-		
+		      <?php foreach( $attributes as $key => $value ) { echo $key.'="'.$value.'" '; } ?>
+		      >
+		<input type="hidden" name="option_page" value="<?php echo $this->handler->get_page_name(); ?>" />
+
 		<?php
+		if( $action ):
+			?>
+			<input type="hidden" name="action" value="<?php echo $action; ?>" />
+			<?php
+		endif;
+		
+		wp_nonce_field( $this->get_name().'-options' );
+	}
+	
+	
+	/**
+	 * Displays the start form tag and mandatory fields for the start of a GET form.
+	 * The action and query variables are displayed as hidden tags.
+	 * @param  string|null  $class       The class of the form.
+	 * @param  array|null   $attributes  Additional attributes to add to the start form tag.
+	 * @param  string|null  $action      The action the form will perform.
+	 * @param  array|null   $query       Additional query args for the form url/action.
+	 */
+	public function form_start_get( $class = null, $attributes = array(), $action = null, $query = array() )
+	{
+		if( !is_array($attributes) ) $attributes = array();
+		if( !is_array($query) ) $query = array();
+		
+		?>
+		<form action="<?php echo apl_get_page_url( false ); ?>" 
+		      class="<?php echo $class; ?>"
+		      <?php foreach( $attributes as $key => $value ) { echo $key.'="'.$value.'" '; } ?>
+		      >
+		<?php
+		$page = $this->handler->get_page_name();
+		$tab = $this->handler->get_tab_name();
+		
+		if( isset($query['page']) ) $page = $query['page'];
+		if( isset($query['tab']) ) $tab = $query['tab'];
+		
+		if( $page ):
+			?>
+			<input type="hidden" name="page" value="<?php echo $page; ?>" />
+			<?php
+		endif;
+
+		if( $tab ):
+			?>
+			<input type="hidden" name="tab" value="<?php echo $tab; ?>" />
+			<?php
+		endif;
+		
+		if( $action ):
+			?>
+			<input type="hidden" name="action" value="<?php echo $action; ?>" />
+			<?php
+		endif;
+		
+		foreach( $query as $k => $v ):
+			?>
+			<input type="hidden" name="<?php echo $k; ?>" value="<?php echo $v; ?>" />
+			<?php
+		endforeach;
+	}
+	
+	
+	/**
+	 * Gets the URL of the current admin page with new query arguments added.
+	 * @param   array   $query  An array of key/value pairs for additional URL query items.
+	 * @return  string  The generated URL with new query arguments.
+	 */
+	public function get_page_url( $query = array() )
+	{
+		$url = apl_get_page_url( false );
+		
+		if( is_string($this->menu) )
+			$url .= '?'.parse_url($this->menu, PHP_URL_QUERY).'&';
+		else
+			$url .= '?';
+		
+		if( isset($query['page']) )
+			$url .= 'page='.$query['page'];
+		else
+			$url .= 'page='.$this->handler->get_page_name();
+		
+		if( isset($query['tab']) )
+			$url .= '&tab='.$query['tab'];
+		elseif( $this->handler->get_tab_name() )
+			$url .= '&tab='.$this->handler->get_tab_name();
+		
+		foreach( $query as $key => $value )
+		{
+			$url .= '&'.$key.'='.$value;
+		}
+		
+		return $url;
 	}
 	
 	
@@ -478,35 +830,35 @@ abstract class APL_AdminPage
 	 */
 	public function print_section( $section_name )
 	{
-		do_settings_sections( $this->name.':'.$section_name );
+		do_settings_sections( $this->get_name().':'.$section_name );
 	}
 	
 	
 	/**
 	 * Displays a button with the needed attributes to be used by the AplAjaxButton
 	 * jQuery plugin for automated AJAX processing. 
-	 * @param  string       $text          The text to display on the button.
-	 * @param  string       $action        The action to send in the AJAX request.
-	 * @param  array|null   $form_classes  The classes of the forms that should be 
-	 *                                     processed via AJAX individually.  If no form
-	 *                                     is given, then current form is assumed.
-	 * @param  array|null   $input_names   The names of the form input values to process
-	 *                                     via AJAX together.  If no input values are
-	 *                                     given, then the entire form will be processed.
-	 * @param  string|null  $callback_start       The JS function to call when processing 
-	 *                                            begins, before the first loop.
-	 * @param  string|null  $callback_end         The JS function to call when processing
-	 *                                            finishes, after the last loop.
-	 * @param  string|null  $callback_loop_start  The JS function to call when each form
-	 *                                            begins processing.
-	 * @param  string|null  $callback_loop_end    The JS function to call when each formatOutput
-	 *                                            finishes processing.
+	 * @param  string       $text           The text to display on the button.
+	 * @param  string       $action         The action to send in the AJAX request.
+	 * @param  array|null   $form_classes   The classes of the forms that should be 
+	 *                                      processed via AJAX individually.  If no form
+	 *                                      is given, then current form is assumed.
+	 * @param  array|null   $input_names    The names of the form input values to process
+	 *                                      via AJAX together.  If no input values are
+	 *                                      given, then the entire form will be processed.
+	 * @param  string|null  $cb_start       The JS function to call when processing
+	 *                                      begins, before the first loop.
+	 * @param  string|null  $cb_end         The JS function to call when processing
+	 *                                      finishes, after the last loop.
+	 * @param  string|null  $cb_loop_start  The JS function to call when each form
+	 *                                      begins processing.
+	 * @param  string|null  $cb_loop_end    The JS function to call when each formatOutput
+	 *                                      finishes processing.
 	 */
-	public function create_ajax_submit_button( $text, $action, $form_classes, $input_names, $callback_start = null, $callback_end = null, $callback_loop_start = null, $callback_loop_end = null )
+	public function create_ajax_submit_button( $text, $action, $form_classes, $input_names, $cb_start = null, $cb_end = null, $cb_loop_start = null, $cb_loop_end = null )
 	{
 		if( is_array($form_classes) ) $form_classes = implode( ',', $form_classes );
 		if( is_array($input_names) ) $input_names = implode( ',', $input_names );
-		$nonce = wp_create_nonce( $this->handler->get_full_page_name().'-'.$action.'-ajax-request' );
+		$nonce = wp_create_nonce( $this->get_name().'-'.$action.'-ajax-request' );
 		
 		?>
 		<button type="button" 
@@ -516,10 +868,10 @@ abstract class APL_AdminPage
 		        action="<?php echo $action; ?>"
 		        form="<?php echo $form_classes; ?>"
 		        input="<?php echo $input_names; ?>"
-		        cb_start="<?php echo $callback_start; ?>"
-		        cb_end="<?php echo $callback_end; ?>"
-		        cb_loop_start="<?php echo $callback_loop_start; ?>"
-		        cb_loop_end="<?php echo $callback_loop_end; ?>"
+		        cb_start="<?php echo $cb_start; ?>"
+		        cb_end="<?php echo $cb_end; ?>"
+		        cb_loop_start="<?php echo $cb_loop_start; ?>"
+		        cb_loop_end="<?php echo $cb_loop_end; ?>"
 		        nonce="<?php echo $nonce; ?>">
 		    <?php echo $text; ?>
 		</button>
@@ -533,9 +885,262 @@ abstract class APL_AdminPage
 	 */
 	public function get_name()
 	{
+		if( $this->menu && $this->menu instanceof APL_AdminMenu )
+			return $this->menu->name.'-'.$this->name;
+		
 		return $this->name;
 	}
-
+	
+	
+	/**
+	 * Set the error as the only error message for the page.
+	 * @param   string  $error  The error message.
+	 * @param   bool    $save   True to save the error data to the session.
+	 */
+	public function set_error( $error, $save = false )
+	{
+		if( !is_array($error) ) $error = array( $error );
+		$this->errors = $error;
+		if( $save ) $this->save_error();
+	}
+	
+	
+	/**
+	 * Add a error to the page errors.
+	 * @param   string  $error  The error message.
+	 * @param   bool    $save    True to save the error data to the session.
+	 */
+	public function add_error( $error, $save = false )
+	{
+		$this->errors[] = $error;
+		if( $save ) $this->save_error();
+	}
+	
+	
+	/**
+	 * Save the errors in the session data.
+	 */
+	public function save_error()
+	{
+		$_SESSION['apl-error'] = json_encode(
+			array(
+				'page'		=> $this->get_name(),
+				'messages'	=> $this->errors,
+			)
+		);
+	}
+	
+	
+	/**
+	 * Clears any errors stored in the session.
+	 */
+	public function clear_error()
+	{
+		$this->errors = array();
+		unset( $_SESSION['apl-error'] );
+	}
+	
+	
+	/**
+	 * Gets the apl-error session data, if it exists and matches the current page.
+	 * @return  array  The error messages for the current page.
+	 */
+	public function get_error()
+	{
+		if( !isset($_SESSION['apl-error']) ) return array();
+		
+		$e = json_decode( $_SESSION['apl-error'], true );
+		
+		if( !array_key_exists('page', $e) ) return array();
+		if( $e['page'] !== $this->handler->get_name() ) return array();
+		
+		if( !array_key_exists('messages', $e) ) return array();
+		return $e['messages'];
+	}
+	
+	
+	/**
+	 * Displays any errors stored in the session.
+	 */
+	protected function display_error()
+	{
+		$this->errors = array_merge( $this->get_error(), $this->errors );
+		?>
+		
+		<div class="page-errors">
+		
+		<?php foreach( $this->errors as $message ): ?>
+			<div><?php echo $message; ?></div>
+		<?php endforeach; ?>
+		
+		</div>
+		
+		<?php
+		$this->clear_error();
+	}
+	
+	
+	/**
+	 * Set the notice as the only notice message for the page.
+	 * @param   string  $notice  The notice message.
+	 * @param   bool    $save    True to save the notice data to the session.
+	 */
+	public function set_notice( $notice, $save = false )
+	{
+		if( !is_array($notice) ) $notice = array( $notice );
+		$this->notices = $notice;
+		if( $save ) $this->save_notice();
+	}
+	
+	
+	/**
+	 * Add a notice to the page notices.
+	 * @param   string  $notice  The notice message.
+	 * @param   bool    $save    True to save the notice data to the session.
+	 */
+	public function add_notice( $notice, $save = false )
+	{
+		$this->notices[] = $notice;
+		if( $save ) $this->save_notice();
+	}
+	
+	
+	/**
+	 * Save the notices in the session data.
+	 */
+	public function save_notice()
+	{
+		$_SESSION['apl-notice'] = json_encode(
+			array(
+				'page'		=> $this->get_name(),
+				'messages'	=> $this->notices,
+			)
+		);
+	}
+	
+	
+	/**
+	 * Clears any notices stored in the session.
+	 */
+	public function clear_notice()
+	{
+		$this->notices = array();
+		unset( $_SESSION['apl-notice'] );
+	}
+	
+	
+	/**
+	 * Gets the apl-notice session data, if it exists and matches the current page.
+	 * @return  array  The notice messages for the current page.
+	 */
+	public function get_notice()
+	{
+		if( !isset($_SESSION['apl-notice']) ) return array();
+		
+		$e = json_decode( $_SESSION['apl-notice'], true );
+		
+		if( !array_key_exists('page', $e) ) return array();
+		if( $e['page'] !== $this->handler->get_name() ) return array();
+		
+		if( !array_key_exists('messages', $e) ) return array();
+		return $e['messages'];
+	}
+	
+	
+	/**
+	 * Displays any notices stored in the session.
+	 */
+	protected function display_notice()
+	{
+		$this->notices = array_merge( $this->get_notice(), $this->notices );
+		?>
+		
+		<div class="page-notices">
+		
+		<?php foreach( $this->notices as $message ): ?>
+			<div><?php echo $message; ?></div>
+		<?php endforeach; ?>
+		
+		</div>
+		
+		<?php
+		$this->clear_notice();
+	}
+	
+	
+	/**
+	 * Sets the failure status and message that will be returned when AJAX call is complete.
+	 * @param  string  $message  The failure message.
+	 */
+	public function ajax_failed( $message = '' )
+	{
+		$this->output['success'] = false;
+		$this->output['message'] = $message;
+	}
+	
+	
+	/**
+	 * Sets the success status and message that will be returned when AJAX call is complete.
+	 * @param  string  $message  The success message.
+	 */
+	public function ajax_success( $message = '' )
+	{
+		$this->output['success'] = true;
+		$this->output['message'] = $message;
+	}
+	
+	
+	/**
+	 * Set a key/value pair tto the returning AJAX data.
+	 * @param  string  $key    The key/name of the value.
+	 * @param  string  $value  The value.
+	 */
+	public function ajax_set( $key, $value )
+	{
+		$this->output['ajax'][$key] = $value;
+	}
+	
+	
+	/**
+	 * Remove a value from the returning AJAX data.
+	 * @param  string  $key  The key/name of value.
+	 */
+	public function ajax_remove( $key )
+	{
+		unset( $this->output['ajax'][$key] );
+	}
+	
+	
+	/**
+	 * Sets the return values needed to start a new AJAX loop.
+	 * @param   string  $action         The new AJAX action.
+	 * @param   array   $items          The items that will be subject of the new AJAX action.
+	 * @param   string  $cb_start       The new start JS callback.
+	 * @param   string  $cb_end         The new end JS callback.
+	 * @param   string  $cb_loop_start  The new start loop JS callback.
+	 * @param   string  $cb_loop_end    The new end loop JS callback.
+	 */
+	public function ajax_set_items( $action, $items, $cb_start = null, $cb_end = null, $cb_loop_start = null, $cb_loop_end = null )
+	{
+		$this->output['ajax']['page'] 			= $this->handler->get_page_name();
+		$this->output['ajax']['tab'] 			= $this->handler->get_tab_name();
+		$this->output['ajax']['action'] 		= $action;
+		$this->output['ajax']['items'] 			= $items;
+		$this->output['ajax']['cb_start'] 		= $cb_start;
+		$this->output['ajax']['cb_end'] 		= $cb_end;
+		$this->output['ajax']['cb_loop_start'] 	= $cb_loop_start;
+		$this->output['ajax']['cb_loop_end'] 	= $cb_loop_end;
+		$this->output['ajax']['nonce'] 			= wp_create_nonce( $this->get_name().'-'.$action.'-ajax-request' );
+	}
+	
+	
+	/**
+	 * Display the AJAX data.
+	 */
+	public function ajax_output()
+	{
+		echo json_encode( $this->output );
+	}
 
 } // class APL_AdminPage
 endif; // if( !class_exists('APL_AdminPage') ):
