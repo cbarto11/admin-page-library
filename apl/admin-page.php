@@ -64,8 +64,9 @@ abstract class APL_AdminPage
 	
 	/**
 	 * Adds the admin page to the main menu and sets up all values, actions and filters.
+	 * Called during "admin_menu" or "network_admin_menu" action.
 	 */
-	public function setup()
+	public function admin_menu_setup()
 	{
 		$menu_name = $this->menu;
 		if( $this->menu instanceof APL_AdminMenu ) $menu_name = $this->menu->name;
@@ -119,8 +120,8 @@ abstract class APL_AdminPage
 		
 		foreach( $this->tabs as $tab )
 		{
-			if( $tab instanceof APL_TabAdminPage ) { $tab->setup(); }
-		}
+			if( $tab instanceof APL_TabAdminPage ) $tab->admin_menu_setup();
+ 		}
 	}
 	
 	

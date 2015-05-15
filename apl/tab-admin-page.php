@@ -38,7 +38,7 @@ abstract class APL_TabAdminPage extends APL_AdminPage
 	/**
 	 * Sets up the current tab-admin page.
 	 */
-	public function setup()
+	public function admin_menu_setup()
 	{
 		if( $this->handler->current_tab !== $this ) return;
 		

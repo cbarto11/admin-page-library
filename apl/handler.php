@@ -53,11 +53,11 @@ class APL_Handler
 
 		if( $is_network_admin )
 		{
-			add_action( 'network_admin_menu', array($this, 'setup') );
+			add_action( 'network_admin_menu', array($this, 'admin_menu_setup'), 10 );
 		}
 		else
 		{
-			add_action( 'admin_menu', array($this, 'setup') );
+			add_action( 'admin_menu', array($this, 'admin_menu_setup'), 10 );
 		}
 
 		add_action( 'admin_enqueue_scripts', array($this, 'enqueue_scripts') );
@@ -115,12 +115,15 @@ class APL_Handler
 		
 		foreach( $this->pages as $page )
 		{
-			$page->setup();
+			$menu->admin_menu_setup();
 		}
 		
-		if( !$this->disable_redirect )
+		foreach( $this->pages as $pagetree )
 		{
-			add_action( 'admin_init', array($this, 'possible_redirect') );
+			foreach( $pagetree as $page )
+			{
+				$page->admin_menu_setup();
+			}
 		}
 	}
 	
@@ -150,7 +153,6 @@ class APL_Handler
 	protected function set_current_page()
 	{
 		global $pagenow;
-
 		switch( $pagenow )
 		{
 			case 'options.php':

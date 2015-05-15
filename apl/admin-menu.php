@@ -23,7 +23,6 @@ class APL_AdminMenu
 	public $display_menu_tab_list;	// True if a tab list of all of the page should be
 									// displayed, otherwise False.
 	
-	
 	/**
 	 * Creates an APL_AdminMenu object.
 	 * Sets up the values for the admin menu.
@@ -69,7 +68,7 @@ class APL_AdminMenu
 	/**
 	 * Adds the admin menu to the main menu and sets up all associated pages.
 	 */
-	public function setup()
+	public function admin_menu_setup()
 	{
 		add_menu_page(
 			$this->menu_title, 
@@ -81,7 +80,7 @@ class APL_AdminMenu
 		
 		foreach( $this->pages as $page )
 		{
-			$page->setup();
+			$page->admin_menu_setup();
 		}
 
 		remove_submenu_page( $this->name, $this->name );
@@ -129,7 +128,7 @@ class APL_AdminMenu
 		
 		?></h2><?php
 	}
-	
+		
 } // class APL_AdminMenu
 endif; // if( !class_exists('APL_AdminMenu') ):
 
