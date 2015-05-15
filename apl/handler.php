@@ -60,6 +60,7 @@ class APL_Handler
 			add_action( 'admin_menu', array($this, 'admin_menu_setup'), 10 );
 		}
 
+		add_action( 'admin_enqueue_scripts', array($this, 'enqueue_scripts') );
 		add_action( 'wp_ajax_apl-ajax-action', array($this, 'perform_ajax_request') );
 		add_action( 'admin_init', array($this, 'possible_redirect'), 99999 );
 	}
@@ -243,6 +244,16 @@ class APL_Handler
 		{
 			$this->disable_redirect = true;
 		}
+	}
+	
+	
+	/**
+	 * Enqueues the JavaScript libraries.
+	 */
+	public function enqueue_scripts()
+	{
+		wp_enqueue_script( 'apl-ajax', WPMU_PLUGIN_URL.'/apl/ajax.js', array('jquery') );
+		wp_enqueue_script( 'apl-list-table-inline-bulk-action', WPMU_PLUGIN_URL.'/apl/list-table-inline-bulk-action.js', array('jquery') );
 	}
 	
 
