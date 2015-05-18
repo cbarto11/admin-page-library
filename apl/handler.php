@@ -252,8 +252,9 @@ class APL_Handler
 	 */
 	public function enqueue_scripts()
 	{
-		wp_enqueue_script( 'apl-ajax', WPMU_PLUGIN_URL.'/apl/ajax.js', array('jquery') );
-		wp_enqueue_script( 'apl-list-table-inline-bulk-action', WPMU_PLUGIN_URL.'/apl/list-table-inline-bulk-action.js', array('jquery') );
+		$plugin_url = preg_replace( "/https?:\/\//i", '//', WPMU_PLUGIN_URL );
+		wp_enqueue_script( 'apl-ajax', $plugin_url.'/apl/ajax.js', array('jquery') );
+		wp_enqueue_script( 'apl-list-table-inline-bulk-action', $plugin_url.'/apl/list-table-inline-bulk-action.js', array('jquery') );
 	}
 	
 
