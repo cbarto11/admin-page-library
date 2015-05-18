@@ -610,8 +610,6 @@ abstract class APL_AdminPage
 		else
 		{
 			$old_settings = get_option( $option, array() );
-			vtt_print($old_settings);
-			vtt_print($settings);
 			$settings = array_merge( $old_settings, $settings );
 		}
 		
