@@ -14,11 +14,11 @@ function apl_print( $var, $label = null )
 	
 	if( $label !== null )
 	{
-		$label = print_r( $label, true );
+		$label = esc_html( print_r($label, true) );
 		echo "<strong>$label:</strong><br/>";
 	}
 	
-	var_dump($var);
+	echo esc_html( print_r($var, true) );
 	
 	echo '</pre>';
 }
