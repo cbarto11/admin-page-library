@@ -1,32 +1,61 @@
 <?php
-
 /**
- * APL_Handler
- * 
  * The APL_Handler class is the main class which controls or "handles" the admin menus
  * and pages created.
  * 
  * @package    apl
- * @author     Crystal Barton <cbarto11@uncc.edu>
+ * @author     Crystal Barton <atrus1701@gmail.com>
  */
 if( !class_exists('APL_Handler') ):
 class APL_Handler
 {
-	protected $menus;			// A collection of menus with associated admin pages.
-	protected $pages;			// Single main admin pages or admin pages that are
-	                            // children of an existing page (ex. "themes.php").
+	/**
+	 * A collection of menus with associated admin pages.
+	 * @var  Array
+	 */
+	protected $menus;
+
+	/**
+	 * Single main admin pages or admin pages that are children of an existing page (ex. "themes.php").
+	 * @var  Array
+	 */
+	protected $pages;
 	
-	public $current_page;		// The APL_AdminPage object of the current page.
-	public $current_tab;		// The APL_TabAdminPage object of the current tab.
-	public $controller;         // The controlling APL_AdminPage or APL_TabAdminPage object.
+	/**
+	 * The APL_AdminPage object of the current page.
+	 * @var  APL_AdminPage
+	 */
+	public $current_page;
+
+	/**
+	 * The APL_TabAdminPage object of the current tab.
+	 * @var  APL_TabAdminPage
+	 */
+	public $current_tab;
+
+	/**
+	 * The controlling APL_AdminPage or APL_TabAdminPage object.
+	 * @var  APL_AdminPage|APL_TabAdminPage
+	 */
+	public $controller;
 	
-	public $disable_redirect;   // False if we need to attempt to redirect when POST data
-	                            // is present, otherwise True.
-	public $force_redirect_url;	//
+	/**
+	 * False if we need to attempt to redirect when POST data is present, otherwise True.
+	 * @var  bool
+	 */
+	public $disable_redirect;
+
+	/**
+	 * True to force redirect when possible_redirect is called in admin_init.
+	 * @var  bool
+	 */
+	public $force_redirect_url;
 	
-	public $is_network_admin;   // True if only show pages on the network admin menu,
-	                            // otherwise False to only show on a site's admin menu.
-	
+	/**
+	 * True if only show pages on the network admin menu, otherwise False to only show on a site's admin menu.
+	 * @var  bool
+	 */	
+	public $is_network_admin;
 
 
 	/**
@@ -79,8 +108,8 @@ class APL_Handler
 
 	/**
 	 * Add a page to the main admin menu.
-	 * @param  APL_AdminPage  $page    Admin page to be displayed in the main admin menu.
-	 * @param  string         $parent  The parent page's name/slug.
+	 * @param  APL_AdminPage  $page  Admin page to be displayed in the main admin menu.
+	 * @param  string  $parent  The parent page's name/slug.
 	 */
 	public function add_page( $page, $parent = null )
 	{
@@ -260,9 +289,8 @@ class APL_Handler
 
 	/**
 	 * Retrieves the page that name/slug matches the page name.
-	 * @param   string  $page_name   The name/slug of the page.
-	 * @return  APL_AdminPage|false  The APL_AdminPage object that matches the page name,
-	 *                               otherwise False.
+	 * @param  string  $page_name  The name/slug of the page.
+	 * @return  APL_AdminPage|false  The APL_AdminPage object that matches the page name, otherwise False.
 	 */
 	public function get_page( $page_name )
 	{

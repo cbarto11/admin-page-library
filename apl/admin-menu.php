@@ -1,32 +1,49 @@
 <?php
 /**
- * APL_AdminMenu
- * 
  * The APL_AdminMenu class is a representation of a collection of admin pages in
  * WordPress that will appear together in the main admin menu.
  * 
  * @package    apl
- * @author     Crystal Barton <cbarto11@uncc.edu>
+ * @author     Crystal Barton <atrus1701@gmail.com>
  */
-
 if( !class_exists('APL_AdminMenu') ):
 class APL_AdminMenu
 {
-
-	protected $handler;				// The handler controlling the menu.
-		
-	public $name;					// The name/slug of the menu.
-	public $menu_title;				// The title show on the left menu.
-
-	protected $pages;				// The admin pages found in the menu.
-	
-	public $display_menu_tab_list;	// True if a tab list of all of the page should be
-									// displayed, otherwise False.
+	/**
+	 * The handler controlling the menu.
+	 * @var  APL_Handler
+	 */
+	protected $handler;
 	
 	/**
-	 * Creates an APL_AdminMenu object.
+	 * The name/slug of the menu.
+	 * @var  string
+	 */
+	public $name;
+
+	/**
+	 * The title show on the left menu.
+	 * @var  string
+	 */
+	public $menu_title;
+
+	/**
+	 * The admin pages found in the menu.
+	 * @var  Array
+	 */
+	protected $pages;
+	
+	/**
+	 * True if a tab list of all of the page should be displayed, otherwise False.
+	 * @var  bool
+	 */
+	public $display_menu_tab_list;
+	
+
+	/**
+	 * Constructor.
 	 * Sets up the values for the admin menu.
-	 * @param  string  $name        The name/slug of the menu.
+	 * @param  string  $name  The name/slug of the menu.
 	 * @param  string  $menu_title  The title shown on the left menu.
 	 */
 	public function __construct( $name, $menu_title )
@@ -90,9 +107,8 @@ class APL_AdminMenu
 	
 	/**
 	 * Retrieves the page that name/slug matches the page name.
-	 * @param   string  $page_name   The name/slug of the page.
-	 * @return  APL_AdminPage|false  The APL_AdminPage object that matches the page name,
-	 *                               otherwise False.
+	 * @param  string  $page_name  The name/slug of the page.
+	 * @return  APL_AdminPage|false  The APL_AdminPage object that matches the page name, otherwise False.
 	 */
 	public function get_page( $page_name )
 	{

@@ -12,21 +12,19 @@ jQuery(document).ready(
 ( function( $ ) {
 	
 	/**
-	 * AplAjaxButton
-	 * 
 	 * The AplAjaxButton jQuery plugin performs an AJAX call or a series of AJAX calls
 	 * when the button is clicked.  For each form specified in the button's attributes or
 	 * options, an AJAX call is performed.
 	 * 
 	 * @package    apl
-	 * @author     Crystal Barton <cbarto11@uncc.edu>
+	 * @author     Crystal Barton <atrus1701@gmail.com>
 	 */
 	$.fn.AplAjaxButton = function( options )
 	{
 		/**
 		 * Perform an AJAX call for the current form at form index (fi).
 		 * When the this AJAX call is complete, the next form is processed.
-		 * @param  int    fi        The current index of the form being processed.
+		 * @param  int  fi  The current index of the form being processed.
 		 * @param  array  settings  The AJAX button's settings, as outlined below.
 		 *
 		 * Settings key values:
@@ -132,10 +130,10 @@ jQuery(document).ready(
 		/**
 		 * Perform an AJAX call for the current item in ajax.items at ajax index (ai).
 		 * When the this AJAX call is complete, the next item is processed.
-		 * @param  int    fi        The current index of the form being processed.
+		 * @param  int  fi  The current index of the form being processed.
 		 * @param  array  settings  The AJAX button's settings.
-		 * @param  int    ai        The current index of the ajax input data.
-		 * @param  array  ajax      The AJAX settings received via a previous AJAX request.
+		 * @param  int  ai  The current index of the ajax input data.
+		 * @param  array  ajax  The AJAX settings received via a previous AJAX request.
 		 *
 		 * AJAX key values:
          *  - page: The page that should process the request.

@@ -4,7 +4,7 @@
 /**
  * Print the content of a variable with a label as a "title".  The entire contents is 
  * enclosed in a <pre> block.
- * @param  mixed		$var	The variable to "dumped"/printed to screen.
+ * @param  mixed  $var  The variable to "dumped"/printed to screen.
  * @param  string|null  $label  The label/title of the variable information.
  */
 if( !function_exists('apl_print') ):
@@ -51,7 +51,7 @@ endif;
  * @param   array|{args}  The keys of the input name.  For example:
  *                          apl_name( 'a', 'b', 'c' ) will return "a[b][c]"
  *                          apl_name( array( 'a', 'b', 'c' ) ) will return "a[b][c]"
- * @return  string		The constructed input name. 
+ * @return  string  The constructed input name. 
  */
 if( !function_exists('apl_name') ):
 function apl_name()
@@ -89,7 +89,7 @@ endif;
  * @param   array|{args}  The keys of the input name.  For example:
  *                          apl_name( 'a', 'b', 'c' ) will return "a[b][c]"
  *                          apl_name( array( 'a', 'b', 'c' ) ) will return "a[b][c]"
- * @return  string		The constructed input name. 
+ * @return  string  The constructed input name. 
  */
 if( !function_exists('apl_setting_e') ):
 function apl_setting_e()
@@ -111,7 +111,7 @@ endif;
  * @param   array|{args}  The keys of the input name.  For example:
  *                          apl_name( 'a', 'b', 'c' ) will return "a[b][c]"
  *                          apl_name( array( 'a', 'b', 'c' ) ) will return "a[b][c]"
- * @return  string		The constructed input name. 
+ * @return  string  The constructed input name. 
  */
 if( !function_exists('apl_setting') ):
 function apl_setting()
@@ -162,8 +162,7 @@ endif;
 
 /**
  * Constructs the current page's complete url.
- * @param   bool    True if the full url with domain, path, and arguments should be 
- *                  returned, otherwise just the domain and path url.
+ * @param  bool  True if the full url with domain, path, and arguments should be returned, otherwise just the domain and path url.
  * @return  string  The constructed page URL.
  */
 if( !function_exists('apl_get_page_url') ):

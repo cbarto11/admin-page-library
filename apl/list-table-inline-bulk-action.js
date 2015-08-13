@@ -12,12 +12,10 @@ jQuery(document).ready(
 ( function( $ ) {
 	
 	/**
-	 * ListTableInlineBulkAction
-	 * 
-	 * The ListTableInlineBulkAction jQuery plugin ...
+	 * The ListTableInlineBulkAction jQuery plugin adds an inline edit for a WP_List_Table.
 	 * 
 	 * @package    apl
-	 * @author     Crystal Barton <cbarto11@uncc.edu>
+	 * @author     Crystal Barton <atrus1701@gmail.com>
 	 */
 	$.fn.ListTableInlineBulkAction = function( options )
 	{
