@@ -199,6 +199,9 @@ class APL_Handler
 	public function perform_ajax_request()
 	{
 		$this->set_current_page();
+
+		if( ($this->current_tab || $this->current_page) && (!defined('WP_NETWORK_ADMIN')) )
+			define( 'WP_NETWORK_ADMIN', $this->is_network_admin );
 		
 		if( $this->current_tab )
 		{
