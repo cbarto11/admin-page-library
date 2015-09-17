@@ -3,7 +3,7 @@
 Plugin Name: Admin Page Library (APL)
 Plugin URI: https://github.com/atrus1701/admin-page-library
 Description: The Admin Page Libary (APL) is a collection of classes and functions that are designed to make the process of creating admin menus, pages, and tabs more quickly and with less duplicate code.
-Version: 1.0
+Version: 1.0.1
 Author: Crystal Barton
 Author URI: https://www.linkedin.com/in/crystalbarton
 */
@@ -21,7 +21,7 @@ define( 'APL', 'Admin Page Library' );
  * The version of the plugin.
  * @var  string
  */
-define( 'APL_VERSION', '1.0' );
+define( 'APL_VERSION', '1.0.1' );
 
 /**
  * The path to the plugin folder.
