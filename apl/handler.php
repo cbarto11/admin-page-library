@@ -220,6 +220,8 @@ class APL_Handler
 	 */
 	protected function set_current_page()
 	{
+		if( $this->is_network_admin !== is_network_admin() ) return;
+		
 		global $pagenow;
 		switch( $pagenow )
 		{
