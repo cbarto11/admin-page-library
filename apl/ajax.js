@@ -63,6 +63,7 @@ jQuery(document).ready(
 			data['admin-page'] = settings.page;
 			data['admin-tab'] = settings.tab;
 			data['action'] = 'apl-ajax-action';
+			data['network'] = settings.network;
 			data['nonce'] = settings.nonce;
 			data['apl-ajax-action'] = settings.action;
 			data['count'] = fi+1;
@@ -170,6 +171,7 @@ jQuery(document).ready(
 			data['admin-page'] = ajax.page;
 			data['admin-tab'] = ajax.tab;
 			data['action'] = 'apl-ajax-action';
+			data['network'] = settings.network;
 			data['nonce'] = ajax.nonce;
 			data['apl-ajax-action'] = ajax.action;
 			data['input'] = ajax.items[ai];
@@ -215,6 +217,7 @@ jQuery(document).ready(
 				'page'     : (($(this).attr('page')) ? $(this).attr('page') : null),
 				'tab'      : (($(this).attr('tab')) ? $(this).attr('tab') : null),
 				'action'   : (($(this).attr('action')) ? $(this).attr('action') : null),
+				'network'  : (($(this).attr('network')) ? $(this).attr('network') : 'false'),
 				'forms'    : (($(this).attr('form')) ? $(this).attr('form').split(',') : []),
 				'inputs'   : (($(this).attr('input')) ? $(this).attr('input').split(',') : null),
 				'cb_start' : (($(this).attr('cb_start')) ? window[$(this).attr('cb_start')] : null),

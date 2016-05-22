@@ -136,7 +136,7 @@ abstract class APL_AdminPage
 		$this->tabs = array();
 		$this->tab_names = array();
 		
-		if( is_network_admin() )
+		if( $this->handler->is_network_admin )
 			$this->use_custom_settings = true;
 		else
 			$this->use_custom_settings = false;
@@ -170,8 +170,11 @@ abstract class APL_AdminPage
 	 */
 	public function admin_menu_setup()
 	{
-		$menu_name = $this->menu;
-		if( $this->menu instanceof APL_AdminMenu ) $menu_name = $this->menu->name;
+		if( $this->menu instanceof APL_AdminMenu ) {
+			$menu_name = $this->menu->name;
+		} else {
+			$menu_name = $this->menu;
+		}
 		
 		if( $this->is_main_page )
 		{
@@ -556,7 +559,7 @@ abstract class APL_AdminPage
 					if( $setting['merge'] === true )
 						$settings = $this->merge_settings( $settings, $option );
 					
-					if( is_network_admin() )
+					if( $this->handler->is_network_admin )
 					{
 						update_site_option( $option, $settings );
 					}
@@ -668,7 +671,7 @@ abstract class APL_AdminPage
 	 */
 	public function merge_settings( $settings, $option )
 	{
-		if( is_network_admin() )
+		if( $this->handler->is_network_admin )
 		{
 			$old_settings = get_site_option( $option, array() );
 			$settings = array_merge( $old_settings, $settings );
@@ -922,6 +925,7 @@ abstract class APL_AdminPage
 		        page="<?php echo $this->handler->get_page_name(); ?>"
 		        tab="<?php echo $this->handler->get_tab_name(); ?>"
 		        action="<?php echo $action; ?>"
+		        network="<?php echo ($this->handler->is_network_admin ? 'true' : 'false'); ?>"
 		        form="<?php echo $form_classes; ?>"
 		        input="<?php echo $input_names; ?>"
 		        cb_start="<?php echo $cb_start; ?>"

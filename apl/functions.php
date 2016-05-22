@@ -131,7 +131,7 @@ function apl_setting()
 		$option = $args[0];
 	}
 
-	if( is_network_admin() )
+	if( $this->handler->is_network_admin )
 	{
 		$settings = get_site_option( $option, array() );
 	}

@@ -198,18 +198,17 @@ class APL_Handler
 	 */
 	public function perform_ajax_request()
 	{
-		$this->set_current_page();
+		if( !empty($_POST) && !empty($_POST['network']) && $_POST['network'] === 'true' ) {
+			define( 'WP_NETWORK_ADMIN', true );
+		}
 
-		if( ($this->current_tab || $this->current_page) && (!defined('WP_NETWORK_ADMIN')) )
-			define( 'WP_NETWORK_ADMIN', $this->is_network_admin );
+		$this->set_current_page();
 		
-		if( $this->current_tab )
-		{
+		if( $this->current_tab ) {
 			$this->current_tab->perform_ajax_request();
 		}
 		
-		if( $this->current_page )
-		{
+		if( $this->current_page ) {
 			$this->current_page->perform_ajax_request();
 		}
 	}
@@ -221,7 +220,7 @@ class APL_Handler
 	protected function set_current_page()
 	{
 		if( $this->is_network_admin !== is_network_admin() ) return;
-		
+
 		global $pagenow;
 		switch( $pagenow )
 		{
@@ -248,7 +247,7 @@ class APL_Handler
 		if( $this->current_page )
 		{
 			$this->current_page = $this->get_page( $this->current_page );
-			
+
 			if( $this->current_page )
 			{
 				if( $this->current_tab )
@@ -287,8 +286,8 @@ class APL_Handler
 	public function enqueue_scripts()
 	{
 		$plugin_url = preg_replace( "/https?:\/\//i", '//', WPMU_PLUGIN_URL );
-		wp_enqueue_script( 'apl-ajax', $plugin_url.'/apl/ajax.js', array('jquery') );
-		wp_enqueue_script( 'apl-list-table-inline-bulk-action', $plugin_url.'/apl/list-table-inline-bulk-action.js', array('jquery') );
+		wp_enqueue_script( 'apl-ajax', $plugin_url.'/apl/ajax.js', array('jquery'), APL_VERSION );
+		wp_enqueue_script( 'apl-list-table-inline-bulk-action', $plugin_url.'/apl/list-table-inline-bulk-action.js', array('jquery'), APL_VERSION );
 	}
 	
 

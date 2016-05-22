@@ -21,7 +21,7 @@ define( 'APL', 'Admin Page Library' );
  * The version of the plugin.
  * @var  string
  */
-define( 'APL_VERSION', '1.0.1' );
+define( 'APL_VERSION', '1.0.2' );
 
 /**
  * The path to the plugin folder.
