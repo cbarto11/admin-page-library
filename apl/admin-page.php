@@ -551,7 +551,7 @@ abstract class APL_AdminPage
 			{
 				foreach( $this->settings as $setting )
 				{
-					$option = $setting['key'];
+					$option = $setting['option'];
 					
 					if( !isset($_POST[$option]) ) continue;
 					$settings = $_POST[$option];
