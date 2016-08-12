@@ -103,9 +103,11 @@ class APL_Handler
 	{
 		$menu->set_handler( $this );
 		$this->menus[] = $menu;
+		
+		return $menu;
 	}
 	
-
+	
 	/**
 	 * Add a page to the main admin menu.
 	 * @param  APL_AdminPage  $page  Admin page to be displayed in the main admin menu.
@@ -127,6 +129,8 @@ class APL_Handler
 		$page->set_handler( $this );
 		$page->set_menu( $parent );
 		$this->pages[$parent][] = $page;
+		
+		return $page;
 	}
 	
 	

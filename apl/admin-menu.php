@@ -66,7 +66,9 @@ class APL_AdminMenu
 	public function set_handler( $handler )
 	{
 		$this->handler = $handler;
-		foreach( $this->pages as $page ) { $page->set_handler( $handler ); }
+		foreach( $this->pages as $page ) {
+			$page->set_handler( $handler );
+		}
 	}
 	
 

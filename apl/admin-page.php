@@ -136,10 +136,7 @@ abstract class APL_AdminPage
 		$this->tabs = array();
 		$this->tab_names = array();
 		
-		if( $this->handler->is_network_admin )
-			$this->use_custom_settings = true;
-		else
-			$this->use_custom_settings = false;
+		$this->use_custom_settings = false;
 		$this->settings = array();
 		
 		$this->display_page_tab_list = true;
@@ -252,9 +249,12 @@ abstract class APL_AdminPage
 	public function set_handler( $handler )
 	{
 		$this->handler = $handler;
-		foreach( $this->tabs as $tab )
-		{
+		foreach( $this->tabs as $tab ) {
 			if( $tab instanceof APL_TabAdminPage ) { $tab->set_handler( $handler ); }
+		}
+		
+		if( $this->handler->is_network_admin ) {
+			$this->use_custom_settings = true;
 		}
 	}	
 	
@@ -281,10 +281,15 @@ abstract class APL_AdminPage
 	{
 		if( $tab instanceof APL_TabAdminPage )
 		{
-			$tab->set_handler( $this->handler );
-			$tab->set_menu( $this->menu );
+			if( isset( $this->handler ) ) {
+				$tab->set_handler( $this->handler );
+			}
+			if( isset( $this->menu ) ) {
+				$tab->set_menu( $this->menu );
+			}
+			
 			$tab->set_page( $this );
-			$this->tab_names[$tab->name] = count($this->tabs);
+			$this->tab_names[ $tab->name ] = count( $this->tabs );
 		}
 		$this->tabs[] = $tab;
 	}
@@ -539,10 +544,10 @@ abstract class APL_AdminPage
 	{
 		if( !isset($_REQUEST['action']) && !isset($_REQUEST['action2']) ) return;
 		
-		if( !empty($_POST) )
+		if( ! empty( $_POST ) )
 		{
-			if( !isset($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], $this->get_name().'-options') )
-			{
+			if( ! isset( $_POST['_wpnonce'] ) || 
+			    ! wp_verify_nonce( $_POST['_wpnonce'], $this->get_name().'-options' ) ) {
 				$this->set_error( 'The submitted data cannot be verified.' );
 				return;
 			}
@@ -559,12 +564,10 @@ abstract class APL_AdminPage
 					if( $setting['merge'] === true )
 						$settings = $this->merge_settings( $settings, $option );
 					
-					if( $this->handler->is_network_admin )
-					{
+					if( $this->handler->is_network_admin ) {
 						update_site_option( $option, $settings );
 					}
-					else
-					{
+					else {
 						update_option( $option, $settings );
 					}
 				}
