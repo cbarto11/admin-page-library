@@ -21,6 +21,33 @@ jQuery(document).ready(
 	 */
 	$.fn.AplAjaxButton = function( options )
 	{
+		function get_input_values( fi, settings )
+		{
+			var inputs = {};
+			var current_form = settings.forms[fi];
+
+			// serialize data from form/input data.
+			if( settings.inputs && settings.inputs.length > 0 )
+			{
+				for( var i in settings.inputs )
+				{
+					inputs[settings.inputs[i]] = $(current_form).find('[name="'+settings.inputs[i]+'"]').val();
+				}
+			}
+			else
+			{
+				var form_input = $(current_form).serializeArray();
+				for( var i in form_input )
+				{
+					var finput = form_input[i];
+					inputs[finput.name] = finput.value;
+				}
+			}
+			
+			return inputs;
+		}
+		
+		
 		/**
 		 * Perform an AJAX call for the current form at form index (fi).
 		 * When the this AJAX call is complete, the next form is processed.
@@ -68,25 +95,7 @@ jQuery(document).ready(
 			data['apl-ajax-action'] = settings.action;
 			data['count'] = fi+1;
 			data['total'] = settings.forms.length;
-			
-			data['input'] = {};
-			// serialize data from form/input data.
-			if( settings.inputs && settings.inputs.length > 0 )
-			{
-				for( var i in settings.inputs )
-				{
-					data['input'][settings.inputs[i]] = $(current_form).find('[name="'+settings.inputs[i]+'"]').val();
-				}
-			}
-			else
-			{
-				var form_input = $(current_form).serializeArray();
-				for( var i in form_input )
-				{
-					var finput = form_input[i];
-					data['input'][finput.name] = finput.value;
-				}
-			}
+			data['input'] = get_input_values( fi, settings );
 			
 			// perform the AJAX request.
 			$.ajax({
@@ -174,10 +183,14 @@ jQuery(document).ready(
 			data['network'] = settings.network;
 			data['nonce'] = ajax.nonce;
 			data['apl-ajax-action'] = ajax.action;
-			data['input'] = ajax.items[ai];
 			data['count'] = ai+1;
 			data['total'] = ajax.items.length;
-						
+			
+			data['input'] = get_input_values( fi, settings );
+			for( var i in ajax.items[ai] ) {
+				data['input'][i] = ajax.items[ai][i];
+			}
+			
 			// perform the AJAX request.
 			$.ajax({
 				type: 'POST',
