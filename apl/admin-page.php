@@ -622,15 +622,20 @@ abstract class APL_AdminPage
 		 	<div class="page-contents">
 		 	
 			<?php
-			
 			$this->display_notice();
-			$this->display_error();
+		 	if( $this->handler->current_tab ) {
+				$this->handler->current_tab->display_notice();
+			}
 			
-		 	if( $this->handler->current_tab ):
-		 		$this->handler->current_tab->display();
-		 	else:
-		 		$this->display();
-		 	endif;
+			$this->display_error();
+		 	if( $this->handler->current_tab ) {
+				$this->handler->current_tab->display_error();
+			}
+			
+			$this->display();
+		 	if( $this->handler->current_tab ) {
+				$this->handler->current_tab->display();
+			}
 		 	?>
 		 	
 		 	</div><!-- .page-contents -->
@@ -1028,6 +1033,10 @@ abstract class APL_AdminPage
 	protected function display_error()
 	{
 		$this->errors = array_merge( $this->get_error(), $this->errors );
+		if( 0 === count( $this->errors ) ) {
+			$this->clear_error();
+			return;
+		}
 		?>
 		
 		<div class="page-errors">
@@ -1116,6 +1125,10 @@ abstract class APL_AdminPage
 	protected function display_notice()
 	{
 		$this->notices = array_merge( $this->get_notice(), $this->notices );
+		if( 0 === count( $this->notices ) ) {
+			$this->clear_notice();
+			return;
+		}
 		?>
 		
 		<div class="page-notices">
