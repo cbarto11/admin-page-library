@@ -49,7 +49,7 @@ jQuery(document).ready(
 		 */
 		function remove_all_inline_bulk_action_rows( settings )
 		{
-			$( settings.table ).find( 'tr.inline-bulk-action' ).remove();
+			$( settings.table ).prev().find( 'tr.inline-bulk-action' ).remove();
 		}
 		
 		
@@ -60,13 +60,12 @@ jQuery(document).ready(
 		function show( settings )
 		{
 			remove_all_inline_bulk_action_rows( settings );
-			$( settings.table ).prepend( $(settings.this).html() );
-			
-			$( settings.table ).find('button.bulk-save').click( 
+			$( settings.table ).prev().prepend( $(settings.this).html() );
+			$( settings.table ).prev().find('button.bulk-save').click( 
 				function(event) {
 					save(settings);
 			});
-			$( settings.table ).find('button.bulk-cancel').click(
+			$( settings.table ).prev().find('button.bulk-cancel').click(
 				function(event) {
 					event.preventDefault();
 					hide(settings);
@@ -92,6 +91,7 @@ jQuery(document).ready(
 		 */
 		function save( settings )
 		{
+			enable_bulk_action_lists();
 			// just let it submit...
 		}
 		
@@ -113,7 +113,7 @@ jQuery(document).ready(
 			if( !settings.table || !settings.action ) return;
 			
 			// need table class to be valid.
-			settings.table = $('table.wp-list-table.'+settings.table+' #the-list');
+			settings.table = $('table.wp-list-table.'+settings.table);
 			if( !settings.table ) return;
 
 			// setup bulk action selection (top) to display the inline bulk action row.
