@@ -1,12 +1,11 @@
 <?php
 /*
 Plugin Name: Admin Page Library (APL)
-Plugin URI: https://github.com/atrus1701/admin-page-library
+Plugin URI: https://github.com/clas-web/admin-page-library
 Description: The Admin Page Libary (APL) is a collection of classes and functions that are designed to make the process of creating admin menus, pages, and tabs more quickly and with less duplicate code.
-Version: 1.1.2
-Author: Crystal Barton
-Author URI: https://www.linkedin.com/in/crystalbarton
-GitHub Plugin URI: https://github.com/clas-web/admin-page-library
+Version: 1.1.3
+Author: Crystal Barton, Aaron Forsyth
+Author URI: https://pages.uncc.edu/oat
 */
 
 
@@ -39,4 +38,6 @@ require_once( APL_PATH.'/admin-page.php' );
 require_once( APL_PATH.'/tab-admin-page.php' );
 require_once( APL_PATH.'/tab-link.php' );
 require_once( APL_PATH.'/handler.php' );
+require_once( APL_PATH.'/widget-shortcode-control.php' );
+
 
