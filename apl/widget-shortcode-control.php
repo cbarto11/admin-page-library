@@ -59,13 +59,24 @@ class WidgetShortcodeControl extends WP_Widget
 	/**
 	 * Registers the Widget Shortcode Control as a WordPress widget.
 	 */
+// 	public static function register_widget()
+// 	{
+// 		add_action(
+// 			'widgets_init',
+// 			create_function('', 'return register_widget("'.get_called_class().'");')
+// 		);
+// 	}
+
 	public static function register_widget()
 	{
 		add_action(
 			'widgets_init',
-			create_function('', 'return register_widget("'.get_called_class().'");')
+			function() {
+				return register_widget(get_called_class());
+			}
 		);
 	}
+
 	
 	
 	/**
